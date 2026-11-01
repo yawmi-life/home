@@ -43,10 +43,10 @@ $('ymBookTitle').value=b?.title||'';$('ymBookPages').value=b?.totalPages||'';$('
 $('ymBookStatus').value=b?.status||'unread';$('ymBookRating').value=b?.rating||0;$('ymBookFavorite').checked=!!b?.favorite;$('ymBookNotes').value=b?.notes||'';$('ymBookDelete').hidden=!b;$('ymBookDialog').showModal();
 }
 function saveBook(ev){
-ev.preventDefault();const a=api(),books=library(),title=$('ymBookTitle').value.trim().slice(0,160),total=Math.floor(Number($('ymBookPages').value)),page=Math.floor(Number($('ymBookCurrent').value));
+ev.preventDefault();const a=api(),books=library(),title=$('ymBookTitle').value.trim().slice(0,160),total=Math.floor(Number($('ymBookPages').value));let page=Math.floor(Number($('ymBookCurrent').value));
 if(!title||!Number.isFinite(total)||total<1||total>100000||!Number.isFinite(page)||page<0||page>total){$('ymBookFormError').textContent='أدخل عنوان الكتاب وصفحاته، وتأكد من صحة رقم الصفحة الحالية.';return}
 const old=books.find(x=>x.id===editId),highest=Math.max(0,Number(old?.highestPage??old?.currentPage)||0),delta=Math.max(0,page-highest);
-let status=$('ymBookStatus').value;if(page===total)status='done';else if(page>0&&status==='unread')status='reading';
+let status=$('ymBookStatus').value;if(status==='done')page=total;if(page===total)status='done';else if(page>0&&status==='unread')status='reading';
 const item={id:old?.id||a.uid(),title,totalPages:total,currentPage:page,highestPage:Math.max(highest,page),status,rating:Math.max(0,Math.min(5,Number($('ymBookRating').value)||0)),favorite:$('ymBookFavorite').checked,notes:$('ymBookNotes').value.trim().slice(0,4000),updatedAt:new Date().toISOString()};
 if(old)Object.assign(old,item);else books.push(item);
 if(delta>0){const s=a.getState(),today=a.today(),r=s.daily[today]||(s.daily[today]={habits:{},tasks:{},water:0,mood:0,note:''});r.bookXp=(Number(r.bookXp)||0)+Math.min(delta,200);a.activity('book','قرأت '+delta+' صفحة من '+title,today)}else a.activity('book',(old?'عدلت: ':'أضفت: ')+title,a.today());
