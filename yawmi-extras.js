@@ -1,0 +1,67 @@
+/* YAWMI v14: navigation drawer and personal book library. */
+(()=>{'use strict';
+const $=id=>document.getElementById(id), esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const api=()=>window.YawmiExtraAPI,library=()=>{const s=api().getState();if(!Array.isArray(s.books))s.books=[];return s.books};
+let filter='all',editId=null;
+const statusLabel={unread:'لم أقرأه بعد',reading:'أقرأه حاليًا',done:'تمت القراءة'};
+function drawer(){
+if($('yawmiMenuDrawer'))return;
+const shade=document.createElement('div');shade.className='ym-menu-shade';shade.id='ymMenuShade';shade.hidden=true;
+const side=document.createElement('aside');side.id='yawmiMenuDrawer';side.className='ym-menu-drawer';side.hidden=true;side.setAttribute('role','dialog');side.setAttribute('aria-modal','true');side.setAttribute('aria-label','قائمة التطبيق');
+side.innerHTML='<header class="ym-menu-head"><div><b>يومي LifeOS</b><small>كل يوم تقدم جديد</small></div><button id="ymClose" aria-label="إغلاق">✕</button></header>'
++'<div class="ym-menu-body"><button class="ym-menu-link" data-yam-action="account">👤 <span>الاسم والحساب</span></button><button class="ym-menu-link" data-yam-action="books">📚 <span>مكتبتي وكتبي</span></button>'
++'<label class="ym-menu-label" for="ymSkin">تصميم التطبيق</label><select id="ymSkin"><option value="01_ATLAS_Executive.html">ATLAS · لوحة القيادة</option><option value="02_JOURNAL_Editorial.html">JOURNAL · المفكرة</option><option value="03_QUEST_RPG.html">QUEST · المستويات</option></select>'
++'<label class="ym-menu-label">الوضع</label><div class="ym-seg"><button data-yam-mode="light">☀ فاتح</button><button data-yam-mode="dark">☾ داكن</button><button data-yam-mode="auto">◐ تلقائي</button></div>'
++'<button class="ym-menu-link" data-yam-action="install">📲 <span>تثبيت التطبيق</span></button><button class="ym-menu-link" data-yam-action="settings">⚙️ <span>الإعدادات والمياه</span></button><button class="ym-menu-link" data-yam-action="home">⌂ <span>الرئيسية</span></button>'
++'<p id="ymInstallHelp" class="ym-help" hidden>على أندرويد افتح Chrome ثم ⋮ ثم «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».</p></div>';
+document.body.append(shade,side);
+const close=()=>{side.hidden=true;shade.hidden=true;document.body.classList.remove('ym-menu-open')};
+const open=()=>{$('ymSkin').value=$('skinSwitch').value;document.querySelectorAll('[data-yam-mode]').forEach(b=>b.classList.toggle('is-selected',b.dataset.yamMode===api().getState().theme.mode));side.hidden=false;shade.hidden=false;document.body.classList.add('ym-menu-open');$('ymClose').focus()};
+$('yawmiMenuBtn').addEventListener('click',open);$('ymClose').addEventListener('click',close);shade.addEventListener('click',close);document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!side.hidden)close()});
+$('ymSkin').addEventListener('change',ev=>{close();const s=$('skinSwitch');s.value=ev.target.value;s.dispatchEvent(new Event('change',{bubbles:true}))});
+side.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.yamMode){api().getState().theme.mode=b.dataset.yamMode;api().applyTheme();api().save();document.querySelectorAll('[data-yam-mode]').forEach(x=>x.classList.toggle('is-selected',x===b));return}
+const action=b.dataset.yamAction;if(!action)return;if(action==='install'){const ib=$('installBtn');if(ib&&!ib.hidden){close();ib.click()}else $('ymInstallHelp').hidden=!$('ymInstallHelp').hidden;return}close();if(action==='account')$('yawmiAccountBtn').click();if(action==='settings')api().openSettings();if(action==='books')api().goBooks();if(action==='home')api().goHome()});
+}
+function renderBooks(){
+if(!api()||!$('ymBooksGrid'))return;
+const books=library();$('ymBooksCount').textContent=books.length+' كتاب';
+const filters=[['all','كل الكتب'],['reading','أقرأه حاليًا'],['unread','لم أقرأه بعد'],['done','تمت القراءة'],['favorite','المفضلة']];
+$('ymBooksFilters').innerHTML=filters.map(([k,t])=>'<button type="button" data-book-filter="'+k+'" class="'+(filter===k?'chosen':'')+'">'+t+'</button>').join('');
+const show=books.filter(b=>filter==='all'||filter==='favorite'&&b.favorite||b.status===filter);
+$('ymBooksGrid').innerHTML=show.length?show.map(b=>{
+const total=Math.max(1,Number(b.totalPages)||1),page=Math.max(0,Math.min(total,Number(b.currentPage)||0)),pct=Math.round(page/total*100);
+return '<article class="ym-book-card"><div class="ym-book-top"><div class="ym-book-cover">📖</div><div class="ym-book-text"><h3>'+esc(b.title)+'</h3><span>'+statusLabel[b.status]+'</span></div><button class="ym-favorite '+(b.favorite?'yes':'')+'" data-book-fav="'+esc(b.id)+'" aria-label="المفضلة">'+(b.favorite?'★':'☆')+'</button></div>'
++'<div class="ym-book-progress"><div class="ym-book-numbers"><b>'+pct+'% مكتمل</b><span>'+page+' / '+total+' صفحة</span></div><div class="progress"><i style="width:'+pct+'%"></i></div></div>'
++'<div class="ym-book-bottom"><div class="ym-book-stars">'+[1,2,3,4,5].map(n=>'<button data-book-rate="'+esc(b.id)+'" data-stars="'+n+'" class="'+(n<=b.rating?'lit':'')+'" aria-label="'+n+' نجوم">★</button>').join('')+'</div><button type="button" class="btn soft" data-book-edit="'+esc(b.id)+'">تعديل وتسجيل صفحات</button></div>'
++(b.notes?'<p class="ym-book-notes">'+esc(b.notes)+'</p>':'')+'</article>';
+}).join(''):'<div class="ym-empty">مفيش كتب هنا حاليًا. ابدأ بإضافة كتاب جديد.</div>';
+}
+function openBook(id){
+const b=library().find(x=>x.id===id);editId=b?.id||null;$('ymBookForm').reset();$('ymBookFormError').textContent='';
+$('ymBookDialogTitle').textContent=b?'تعديل الكتاب':'إضافة كتاب';
+$('ymBookTitle').value=b?.title||'';$('ymBookPages').value=b?.totalPages||'';$('ymBookCurrent').value=b?.currentPage||0;
+$('ymBookStatus').value=b?.status||'unread';$('ymBookRating').value=b?.rating||0;$('ymBookFavorite').checked=!!b?.favorite;$('ymBookNotes').value=b?.notes||'';$('ymBookDelete').hidden=!b;$('ymBookDialog').showModal();
+}
+function saveBook(ev){
+ev.preventDefault();const a=api(),books=library(),title=$('ymBookTitle').value.trim().slice(0,160),total=Math.floor(Number($('ymBookPages').value)),page=Math.floor(Number($('ymBookCurrent').value));
+if(!title||!Number.isFinite(total)||total<1||total>100000||!Number.isFinite(page)||page<0||page>total){$('ymBookFormError').textContent='أدخل عنوان الكتاب وصفحاته، وتأكد من صحة رقم الصفحة الحالية.';return}
+const old=books.find(x=>x.id===editId),highest=Math.max(0,Number(old?.highestPage??old?.currentPage)||0),delta=Math.max(0,page-highest);
+let status=$('ymBookStatus').value;if(page===total)status='done';else if(page>0&&status==='unread')status='reading';
+const item={id:old?.id||a.uid(),title,totalPages:total,currentPage:page,highestPage:Math.max(highest,page),status,rating:Math.max(0,Math.min(5,Number($('ymBookRating').value)||0)),favorite:$('ymBookFavorite').checked,notes:$('ymBookNotes').value.trim().slice(0,4000),updatedAt:new Date().toISOString()};
+if(old)Object.assign(old,item);else books.push(item);
+if(delta>0){const s=a.getState(),today=a.today(),r=s.daily[today]||(s.daily[today]={habits:{},tasks:{},water:0,mood:0,note:''});r.bookXp=(Number(r.bookXp)||0)+Math.min(delta,200);a.activity('book','قرأت '+delta+' صفحة من '+title,today)}else a.activity('book',(old?'عدلت: ':'أضفت: ')+title,a.today());
+a.save();$('ymBookDialog').close();a.render();renderBooks();a.notify('تم حفظ الكتاب ✓');
+}
+function setup(){
+if(!api())return;drawer();
+$('ymAddBook').addEventListener('click',()=>openBook(null));$('ymBookCancel').addEventListener('click',()=>$('ymBookDialog').close());$('ymBookForm').addEventListener('submit',saveBook);
+$('ymBookDelete').addEventListener('click',()=>{const books=library(),i=books.findIndex(b=>b.id===editId);if(i>=0&&confirm('حذف الكتاب من مكتبتك؟')){const name=books[i].title;books.splice(i,1);api().activity('book','حذفت كتاب: '+name,api().today());api().save();$('ymBookDialog').close();api().render()}});
+document.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;
+if(b.dataset.bookFilter){filter=b.dataset.bookFilter;renderBooks()}
+if(b.dataset.bookEdit)openBook(b.dataset.bookEdit);
+if(b.dataset.bookFav){const x=library().find(x=>x.id===b.dataset.bookFav);if(x){x.favorite=!x.favorite;api().save();renderBooks()}}
+if(b.dataset.bookRate){const x=library().find(x=>x.id===b.dataset.bookRate);if(x){x.rating=Number(b.dataset.stars);api().save();renderBooks()}}
+});
+}
+window.YawmiExtras={renderBooks};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
+})();
