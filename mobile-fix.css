@@ -1,0 +1,76 @@
+/* YAWMI mobile layout correction v13: shared ATLAS / JOURNAL / QUEST; no cloud data changes. */
+@media screen and (max-width:960px){
+html,body{max-width:100%;overflow-x:clip}
+.app-shell{width:100%;max-width:100%;min-width:0;display:block;overflow-x:clip}
+.app-content{box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding-inline:16px;padding-bottom:calc(126px + env(safe-area-inset-bottom,0px))}
+.app-content main,.page,.panel,.metric,.hero,.topbar,.home-grid,.stack,.two-cols,.report-grid,.stat-row,.date-row{min-width:0;max-width:100%}
+.home-grid,.two-cols,.report-grid,.stat-row,.habit-overview,.journey-stats{min-width:0}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:9px;min-height:0;padding-block:14px;margin-bottom:18px}
+.top-brand{display:flex;min-width:0;max-width:100%;flex:1 1 100%;align-items:center;justify-content:flex-start;gap:8px}
+.top-brand b{font-size:15px;white-space:nowrap}
+.top-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(88px,115px) repeat(3,34px);gap:6px;align-items:center;justify-content:stretch;flex:1 1 100%;min-width:0;max-width:100%;width:100%}
+.top-actions #yawmi-account-anchor{grid-column:1;grid-row:1;display:flex;min-width:0;width:100%;max-width:100%}
+.top-actions .y-account-btn{display:block;min-width:0;max-width:100%;width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 5px;font-size:10px}
+.top-actions .skin-switch{grid-column:2;grid-row:1;min-width:0!important;max-width:100%!important;width:100%;padding:8px 3px;font-size:10px}
+.top-actions #quickMode{grid-column:3;grid-row:1}
+.top-actions #installBtn{grid-column:4;grid-row:1}
+.top-actions [data-open-settings]{grid-column:5;grid-row:1}
+.top-actions .icon-btn{min-width:0;width:34px;height:36px;font-size:16px;padding:0}
+.top-actions .top-avatar,.top-title,.design-label{display:none!important}
+.hero{width:100%;max-width:100%;padding:23px 20px;min-height:240px;overflow:hidden}
+.hero-copy{width:100%;max-width:100%;min-width:0}
+.hero-kicker{max-width:100%;font-size:10px;white-space:normal;overflow-wrap:anywhere}
+.hero h2{font-size:clamp(23px,6vw,31px);line-height:1.55;overflow-wrap:anywhere}
+.hero p{font-size:12px;overflow-wrap:anywhere}
+.hero-art{pointer-events:none;left:-40px;max-width:190px;opacity:.10}
+.hero-level{max-width:100%;min-width:0;gap:10px}
+.hero-level .level-badge{flex:0 0 auto}
+.hero-level .xp-lines{flex:1 1 auto;min-width:0}
+.hero-level .xp-lines b{white-space:normal;overflow-wrap:anywhere}
+.date-row{display:flex;flex-direction:column;align-items:stretch;gap:14px}
+.date-row>div:first-child{min-width:0;max-width:100%}
+.date-controls{display:grid;grid-template-columns:38px minmax(0,1fr) 38px 70px;align-items:center;gap:7px;width:100%;max-width:100%;min-width:0}
+.date-controls .icon-btn{height:40px;width:38px;min-width:0}
+.date-controls input{min-width:0;max-width:100%!important;width:100%!important;height:40px;padding:7px 4px;font-size:12px}
+.date-controls .btn{min-width:0;width:100%;height:40px;padding:7px 3px;font-size:11px}
+.stat-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.stat-row>*,.home-grid>*,.two-cols>*,.report-grid>*,.journey-stats>*{min-width:0}
+.metric{min-width:0;overflow:hidden;padding:14px 12px}
+.metric>span,.metric p,.metric strong{overflow-wrap:anywhere}
+.metric strong{font-size:clamp(23px,6vw,28px)}
+.panel{padding:17px;max-width:100%}
+.panel-head{min-width:0;flex-wrap:wrap}
+.panel-head h3{min-width:0;overflow-wrap:anywhere}
+.task-line,.habit-line,.quest-line,.history-line{min-width:0;max-width:100%}
+.task-copy,.habit-copy,.quest-detail,.history-copy{min-width:0;overflow-wrap:anywhere}
+.bottom-nav{position:fixed!important;left:10px!important;right:10px!important;bottom:calc(9px + env(safe-area-inset-bottom,0px))!important;transform:none!important;width:auto!important;min-width:0!important;max-width:none!important;display:flex;align-items:stretch;justify-content:space-around;gap:2px;padding:6px;z-index:39;border-radius:17px}
+.bottom-nav button{flex:1 1 0;min-width:0;max-width:100%;padding:7px 1px;font-size:10px;overflow:hidden;text-overflow:clip;white-space:nowrap}
+.bottom-nav button span{font-size:19px;margin-bottom:2px}
+.y-auth-wall,.y-auth-sheet{box-sizing:border-box;max-width:100%;padding:12px}
+.y-auth-box{width:100%;max-width:460px;box-sizing:border-box}
+.modal{max-width:calc(100vw - 24px);box-sizing:border-box}
+}
+@media screen and (max-width:480px){
+.app-content{padding-inline:12px;padding-bottom:calc(132px + env(safe-area-inset-bottom,0px))}
+.topbar{gap:7px}
+.top-actions{grid-template-columns:minmax(0,1fr) minmax(86px,106px) repeat(3,32px);gap:4px}
+.top-actions .icon-btn{width:32px;height:34px}
+.top-actions .skin-switch{font-size:9px}
+.hero{padding:21px 17px}
+.hero h2{font-size:clamp(22px,6.2vw,27px)}
+.hero .hero-kicker{font-size:9px}
+.date-controls{grid-template-columns:36px minmax(0,1fr) 36px 62px;gap:6px}
+.date-controls .icon-btn{width:36px}
+.date-controls input{font-size:11px}
+.metric{padding:13px 11px}
+.bottom-nav{left:7px!important;right:7px!important;padding:6px 4px}
+.bottom-nav button{font-size:9px;padding:7px 0}
+.bottom-nav button span{font-size:19px}
+}
+@media screen and (max-width:345px){
+.top-actions{grid-template-columns:minmax(0,1fr) 87px repeat(3,30px);gap:3px}
+.top-actions .icon-btn{width:30px;height:32px}
+.bottom-nav button{font-size:8px}
+.date-controls{gap:4px;grid-template-columns:32px minmax(0,1fr) 32px 54px}
+.date-controls .icon-btn{width:32px}
+}
