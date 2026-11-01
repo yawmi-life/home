@@ -71,3 +71,8 @@
 }
 @media(max-width:680px){.ym-book-grid{grid-template-columns:1fr}}
 @media(max-width:380px){.topbar .top-brand{max-width:100px!important}.topbar .top-brand b{font-size:12px}.topbar .top-actions #yawmi-account-anchor{flex-basis:120px!important}.ym-water-settings{grid-template-columns:1fr}}
+
+/* Water card uses content groups instead of the legacy eight glass grid. */
+.water-glasses{display:block!important;min-width:0;max-width:100%}
+.water-glasses .ym-water-mode,.water-glasses .ym-water-shortcuts,.water-glasses .ym-water-details{max-width:100%;min-width:0}
+.water-glasses .ym-water-mode button,.water-glasses .ym-water-shortcuts button{height:auto!important;min-height:34px!important;border-radius:9px!important;flex:0 1 auto}
