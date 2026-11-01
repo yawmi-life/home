@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#171b30">
+<title>يومي — تأكيد الحساب واستعادة كلمة المرور</title>
+<link rel="icon" href="./icon-192.png">
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(circle at 15% 0%,#302b57,#131729 65%);color:#f3f2fe;font:500 15px/1.9 system-ui,Tahoma,Arial,sans-serif;display:grid;place-items:center;padding:20px}
+main{width:min(100%,480px);padding:32px;border:1px solid #45405f;background:#20243c;border-radius:22px;box-shadow:0 20px 70px #0a0c1b66}h1{font-size:27px;margin:0 0 6px}p{color:#ccc7e5;margin:8px 0 18px}input,button{width:100%;border-radius:11px;padding:14px;font:inherit;margin-top:10px}input{background:#111526;color:white;border:1px solid #545070}button{background:#a58bff;color:#151525;border:0;font-weight:800;cursor:pointer}a{color:#c7b4ff}#resetForm{display:none}#message{white-space:pre-wrap}small{display:block;color:#aaa4c8;margin-top:16px}label{display:block;margin-top:15px}
+</style>
+</head><body><main>
+<h1>✦ يومي</h1>
+<p id="message" role="status">جاري التأكد من رابط البريد الإلكتروني...</p>
+<form id="resetForm"><label for="newPassword">كلمة المرور الجديدة</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" placeholder="8 أحرف على الأقل" required><button type="submit">حفظ كلمة المرور الجديدة</button></form>
+<button id="openApp" type="button" style="display:none">فتح تطبيق يومي</button>
+<small>رابط العودة خاص بتطبيق YAWMI. لا تُدخل كلمة المرور إلا على نطاق yawmi-life.github.io.</small>
+</main>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
+<script>
+(async()=>{
+ 'use strict';
+ const allowed=new Set(['01_ATLAS_Executive.html','02_JOURNAL_Editorial.html','03_QUEST_RPG.html']);
+ let preferred='01_ATLAS_Executive.html';
+ try{const x=localStorage.getItem('yawmi_auth_return_to')||localStorage.getItem('yawmi_v9_preferred_skin');if(allowed.has(x))preferred=x}catch(_){}
+ const message=document.getElementById('message');
+ const form=document.getElementById('resetForm');
+ const open=document.getElementById('openApp');
+ const target='./'+preferred;
+ open.onclick=()=>location.replace(target);
+ const hash=new URLSearchParams(location.hash.slice(1));
+ const query=new URLSearchParams(location.search);
+ const recovery=hash.get('type')==='recovery'||query.get('type')==='recovery';
+ const errorMessage=hash.get('error_description')||query.get('error_description');
+ if(errorMessage){message.textContent='الرابط غير صالح أو انتهت صلاحيته. افتح تطبيق يومي واطلب رابطًا جديدًا.';open.style.display='block';return;}
+ try{
+  if(!window.supabase?.createClient)throw Error('تعذر تحميل مكتبة تسجيل الدخول');
+  const cfg=window.YAWMI_CONFIG;
+  if(!cfg?.supabaseUrl||!cfg?.supabasePublishableKey)throw Error('إعدادات الاتصال غير متاحة');
+  const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{auth:{persistSession:true,detectSessionInUrl:true,autoRefreshToken:true}});
+  let resetMode=recovery;
+  client.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){resetMode=true;form.style.display='block';message.textContent='اكتب كلمة مرور جديدة لحسابك.';}});
+  const {data,error}=await client.auth.getSession();
+  if(error)throw error;
+  if(!data?.session){message.textContent='تعذر تأكيد جلسة الدخول. افتح التطبيق واطلب رابطًا جديدًا إذا لزم الأمر.';open.style.display='block';return;}
+  if(resetMode){
+   message.textContent='اكتب كلمة مرور جديدة لحسابك.';
+   form.style.display='block';
+   form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const password=document.getElementById('newPassword').value;
+    if(password.length<8){message.textContent='كلمة المرور لازم تكون 8 أحرف على الأقل.';return;}
+    const btn=form.querySelector('button');btn.disabled=true;
+    try{
+     const {error}=await client.auth.updateUser({password});
+     if(error)throw error;
+     await client.auth.signOut();
+     message.textContent='تم تغيير كلمة المرور. افتح التطبيق وسجّل الدخول بكلمة المرور الجديدة.';
+     form.style.display='none';open.style.display='block';
+    }catch(e){message.textContent=e.message||'تعذر حفظ كلمة المرور.';}finally{btn.disabled=false;}
+   });
+   return;
+  }
+  message.textContent='تم تأكيد الحساب. يمكنك الآن متابعة يومك.';
+  open.style.display='block';
+  setTimeout(()=>location.replace(target),1200);
+ }catch(e){message.textContent='لم تكتمل العملية: '+(e.message||'خطأ غير معروف')+'. جرّب فتح التطبيق وطلب رابط جديد.';open.style.display='block';}
+})();
+</script>
+</body></html>
