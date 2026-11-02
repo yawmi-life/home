@@ -9,7 +9,7 @@ const goals=()=>Array.isArray(state().goals)?state().goals:(state().goals=[]);
 let editingGoal=null,selectedHistory=new Set();
 function rec(date=today()){const s=state();return s.daily[date]||(s.daily[date]={habits:{},tasks:{},water:0,mood:0,note:''})}
 function habitReader(h,day){
-const q=N(recExisting(day).habits?.reading),goal=Math.max(1,N(h.target));const options=books().filter(b=>b.status==='reading'||b.status==='unread'&&N(b.currentPage)<N(b.totalPages));
+const q=books().length?N(books().reduce((n,b)=>n+(state().bookReadings||[]).filter(r=>r.bookId===b.id&&r.date===day).reduce((a,r)=>a+N(r.pages),0),0)):0,goal=Math.max(1,N(h.target));const options=books().filter(b=>N(b.totalPages)>0);
 const sel=state().readingBookId;
 let id=options.find(x=>x.id===sel)?.id||options.find(x=>x.status==='reading')?.id||options[0]?.id;
 const choices=options.map(b=>'<option value="'+esc(b.id)+'" '+(b.id===id?'selected':'')+'>'+esc(b.title)+' · '+N(b.currentPage)+'/'+N(b.totalPages)+'</option>').join('');
