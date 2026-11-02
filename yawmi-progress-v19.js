@@ -13,7 +13,7 @@ const q=N(recExisting(day).habits?.reading),goal=Math.max(1,N(h.target));const o
 const sel=state().readingBookId;
 let id=options.find(x=>x.id===sel)?.id||options.find(x=>x.status==='reading')?.id||options[0]?.id;
 const choices=options.map(b=>'<option value="'+esc(b.id)+'" '+(b.id===id?'selected':'')+'>'+esc(b.title)+' · '+N(b.currentPage)+'/'+N(b.totalPages)+'</option>').join('');
-return '<div class="habit-line ym-reading-habit '+(q>=goal?'met':'')+'"><span class="icon-tile">📘</span><div class="habit-copy"><b>'+esc(h.title)+'</b><small>اليوم: '+q+' / '+goal+' صفحة</small><div class="ym-habit-inline">'+(choices?'<select aria-label="الكتاب" class="ym-reading-book">'+choices+'</select><input type="number" aria-label="الصفحات المقروءة" class="ym-reading-pages" min="1" max="1000" value="5"><button class="btn soft" type="button" data-ym-read-book>تسجيل</button>':'<button class="btn soft" type="button" data-ym-open-books>＋ أضف كتابًا لمكتبتك</button>')+'</div></div></div>';
+return '<div class="habit-line ym-reading-habit '+(q>=goal?'met':'')+'"><span class="icon-tile">📘</span><div class="habit-copy"><b>'+esc(h.title)+'</b><small>اليوم: '+q+' / '+goal+' صفحة</small><div class="ym-habit-inline">'+(choices?'<select aria-label="الكتاب" class="ym-reading-book">'+choices+'</select><button class="small-btn" type="button" data-ym-book-minus aria-label="تقليل الصفحات">−</button><input type="number" aria-label="عدد الصفحات للتعديل" class="ym-reading-pages" min="1" max="1000" value="5"><button class="small-btn plus" type="button" data-ym-read-book aria-label="إضافة الصفحات">＋</button><button class="btn soft" type="button" data-ym-zero-reading>تصحيح قراءة اليوم</button>':'<button class="btn soft" type="button" data-ym-open-books>＋ أضف كتابًا لمكتبتك</button>')+'</div></div></div>';
 }
 function recExisting(day){return state().daily?.[day]||{habits:{}}}
 function habitQuran(h,day){
@@ -38,6 +38,53 @@ api().notify(end>=total?'مبروك خلصت الكتاب! 🏆':'تم تسجي�
 return true;
 }
 function undoBook(id){const entries=Array.isArray(state().bookReadings)?state().bookReadings:[],last=entries[entries.length-1],book=books().find(b=>b.id===id);if(!book||!last||last.bookId!==id||N(book.currentPage)!==N(last.to)){api().notify('التراجع متاح لآخر قراءة مسجلة فقط');return}if(!confirm('التراجع عن آخر قراءة '+last.pages+' صفحة من «'+book.title+'»؟ سيتم تصحيح التقدم ونقاط القراءة المرتبطة بها.'))return;const d=state().daily[last.date];if(d?.habits)d.habits.reading=Math.max(0,N(d.habits.reading)-N(last.pages));book.currentPage=N(last.from);book.highestPage=N(last.from);book.status=N(last.from)===0?'unread':'reading';delete book.completedAt;book.updatedAt=new Date().toISOString();entries.pop();api().activity('book','تراجعت عن قراءة '+last.pages+' صفحة من '+book.title,today());api().save();api().render();window.YawmiExtras?.renderBooks();api().notify('تم تصحيح القراءة ✓')}
+function reduceBook(id,pages,quiet=false){
+const b=books().find(x=>x.id===id),n=N(pages);
+if(!b){api().notify('اختر الكتاب أولًا');return false}
+if(!n||n>1000){api().notify('حدد عدد صفحات صحيحًا');return false}
+const previous=N(b.currentPage),taken=Math.min(previous,n);
+if(!taken){api().notify('لا توجد صفحات لتقليلها');return false}
+const entries=Array.isArray(state().bookReadings)?state().bookReadings:(state().bookReadings=[]);
+let remaining=taken,tracked=0;
+for(let i=entries.length-1;i>=0&&remaining>0;i--){
+ const e=entries[i];if(e.bookId!==id)continue;
+ const old=N(e.pages),part=Math.min(old,remaining);if(!part)continue;
+ remaining-=part;tracked+=part;
+ const day=state().daily?.[e.date];
+ if(day?.habits)day.habits.reading=Math.max(0,N(day.habits.reading)-part);
+ if(part===old)entries.splice(i,1);
+ else {e.pages=old-part;e.to=Math.max(N(e.from),N(e.to)-part)}
+}
+b.currentPage=previous-taken;b.highestPage=b.currentPage;
+b.status=b.currentPage===0?'unread':'reading';delete b.completedAt;b.updatedAt=new Date().toISOString();
+if(!quiet)api().activity('book','صححت موضع '+b.title+' بمقدار '+taken+' صفحة',today());
+api().save();api().render();window.YawmiExtras?.renderBooks();
+if(!quiet)api().notify('تم تعديل الصفحات وتحديث النقاط ✓');
+return true;
+}
+function zeroTodayBookReadings(){
+const d=state().daily[today()];if(!d?.habits?.reading)return;
+if(!confirm('تصحيح قراءة اليوم؟ سيتم تصفير عداد قراءة الكتب اليوم، وإلغاء جلسات القراءة المسجلة اليوم وإرجاع مواضعها، مع تحديث XP.'))return;
+const entries=Array.isArray(state().bookReadings)?state().bookReadings:(state().bookReadings=[]);
+const byBook={};
+for(const e of entries){if(e.date===today())byBook[e.bookId]=(byBook[e.bookId]||0)+N(e.pages)}
+for(const [id,n] of Object.entries(byBook)){
+ const b=books().find(x=>x.id===id);if(!b)continue;
+ b.currentPage=Math.max(0,N(b.currentPage)-n);b.highestPage=b.currentPage;
+ b.status=b.currentPage===0?'unread':'reading';delete b.completedAt;b.updatedAt=new Date().toISOString();
+}
+state().bookReadings=entries.filter(x=>x.date!==today());
+d.habits.reading=0;api().activity('book','صححت سجل قراءة الكتب اليوم',today());
+api().save();api().render();window.YawmiExtras?.renderBooks();api().notify('تم تصفير قراءة اليوم وتحديث الرتبة');
+}
+function adjustGoalEntries(g,newProgress){
+const old=N(g.progress),now=N(newProgress),events=Array.isArray(g.progressEntries)?g.progressEntries:(g.progressEntries=[]);
+if(now>old)events.push({id:uid(),date:today(),amount:now-old});
+if(now<old){let left=old-now;for(let i=events.length-1;i>=0&&left>0;i--){
+  const used=Math.min(left,N(events[i].amount));events[i].amount=N(events[i].amount)-used;left-=used;
+  if(!events[i].amount)events.splice(i,1);
+}}
+}
 function addQuran(pages){
 const n=N(pages);if(!n||n>604){api().notify('أدخل عدد صفحات صحيحًا');return}
 if(window.YawmiQuran?.addPages){window.YawmiQuran.addPages(n);return}
@@ -95,7 +142,7 @@ const before=N(g.progress),p=Math.min(N(g.target),before+n);
 if(p===before)return;
 g.progress=p;
 if(p===N(g.target)&&!g.completedAt)g.completedAt=today();
-const d=rec(),goalTarget=Math.max(1,N(g.target)),beforePoints=Math.round(110*Math.pow(before/goalTarget,2.32)),afterPoints=Math.round(110*Math.pow(p/goalTarget,2.32));d.goalXp=Math.max(0,N(d.goalXp)+Math.max(0,afterPoints-beforePoints));
+adjustGoalEntries(g,p);
 api().activity('goal','تقدمت '+(p-before)+' '+g.unit+' في '+g.title,today());
 api().save();api().render();renderGoals();
 api().notify(p===N(g.target)?'مبروك تحقيق هدفك! 🏆':'إنجاز جديد ✓');
@@ -103,13 +150,11 @@ api().notify(p===N(g.target)?'مبروك تحقيق هدفك! 🏆':'إنجاز 
 function saveGoal(e){
 e.preventDefault();const title=$('ymGoalTitle').value.trim().slice(0,140),target=N($('ymGoalTarget').value),progress=N($('ymGoalProgress').value);
 if(!title||target<1||target>100000||progress>target){api().notify('راجع اسم الهدف والقيم');return}
-let g=goals().find(x=>x.id===editingGoal),prevComplete=Boolean(g?.completedAt),previousProgress=g?N(g.progress):0;
+let g=goals().find(x=>x.id===editingGoal),prevComplete=Boolean(g?.completedAt);
 const data={title,kind:$('ymGoalType').value,unit:$('ymGoalUnit').value,target,progress};
-if(!g){g={id:uid(),...data};goals().push(g)}else Object.assign(g,data);
+if(!g){g={id:uid(),...data,progress:0,progressEntries:[]};goals().push(g)}adjustGoalEntries(g,progress);Object.assign(g,data);
 if(progress>=target&&!prevComplete)g.completedAt=today();
 if(progress<target)delete g.completedAt;
-if(g&&previousProgress<progress){const oldPoints=Math.round(110*Math.pow(Math.min(1,previousProgress/target),2.32)),newPoints=Math.round(110*Math.pow(Math.min(1,progress/target),2.32));const d=rec();d.goalXp=Math.max(0,N(d.goalXp)+Math.max(0,newPoints-oldPoints))}
-if(g.completedAt)rec();
 api().activity('goal','حفظت الهدف: '+title,today());
 $('ymGoalDialog').close();api().save();api().render();renderGoals();
 }
@@ -146,6 +191,8 @@ const b=e.target.closest('button');if(!b)return;
 if(b.matches('[data-ym-open-books]'))api().goBooks();
 if(b.matches('[data-ym-open-quran]'))api().goQuran();
 if(b.matches('[data-ym-read-book]')){const row=b.closest('.ym-reading-habit');if(row)recordBook(row.querySelector('.ym-reading-book')?.value,Number(row.querySelector('.ym-reading-pages')?.value))}
+if(b.matches('[data-ym-book-minus]')){const row=b.closest('.ym-reading-habit');if(row)reduceBook(row.querySelector('.ym-reading-book')?.value,Number(row.querySelector('.ym-reading-pages')?.value))}
+if(b.matches('[data-ym-zero-reading]'))zeroTodayBookReadings();
 if(b.matches('[data-ym-read-quran]')){const row=b.closest('.ym-reading-habit');if(row)addQuran(Number(row.querySelector('.ym-quran-pages')?.value))}
 if(b.matches('[data-ym-remove-log]'))deleteLog([b.dataset.ymRemoveLog]);
 if(b.matches('[data-ym-remove-selected]'))deleteLog([...selectedHistory]);
@@ -159,7 +206,7 @@ if(b.matches('[data-ym-restore-skills]')){state().hiddenSkills=[];api().rebuildS
 });
 renderGoals();renderSkills();
 }
-window.YawmiProgress={habitReader,habitQuran,recordBook,undoBook,renderGoals,renderSkills,renderHistory,goalXP:(date)=>goals().filter(g=>g.completedAt===date).length*360,
+window.YawmiProgress={habitReader,habitQuran,recordBook,reduceBook,undoBook,renderGoals,renderSkills,renderHistory,goalXP:(date)=>goals().filter(g=>g.completedAt===date).length*360,
 bookBonus:(date)=>books().filter(b=>b.completedAt===date).length*420};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();
 })();
