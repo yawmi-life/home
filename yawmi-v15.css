@@ -1,0 +1,80 @@
+/* YAWMI v15 : home water, month/year heatmaps, Quran, ranks, auth controls. */
+.topbar #ymHomeBrand{cursor:pointer}.topbar #ymHomeBrand:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:9px}
+.ym-menu-identity{background:var(--accent-faint);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px;font-weight:800;font-size:13px;word-break:break-word}
+.top-actions #yawmi-account-anchor{display:none!important}
+.ym-password-wrap{display:flex;align-items:center;position:relative;width:100%}
+.ym-password-wrap .y-auth-input{width:100%;padding-inline-end:46px}
+.ym-password-wrap #ymShowPassword{position:absolute;inset-inline-end:7px;top:50%;transform:translateY(-50%);width:37px;height:35px;background:var(--panel2,#333448);border:1px solid var(--border,#555);border-radius:9px;color:var(--text,#fff)}
+.ym-persist{display:flex;align-items:center;gap:10px;margin:10px 0 15px;font-size:12px;color:var(--text,#eee)}
+.ym-persist input{width:17px;height:17px}
+.ym-persist[hidden]{display:none!important}
+.ym-water-home-config{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end;margin:13px 0}
+.ym-water-home-config label{font-size:11px;font-weight:800;color:var(--muted);display:block}
+.ym-water-home-config input{width:100%;min-width:0;padding:8px 9px;margin:5px 0}
+.ym-heat-toolbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:12px}
+.ym-heat-toolbar label{font-size:11px;font-weight:800;color:var(--muted)}
+.ym-heat-toolbar select{display:block;margin-top:5px;width:100%;min-width:0;padding:8px;font-size:12px}
+.ym-month-chart{width:100%;max-width:100%;margin:13px auto 17px}
+.ym-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:5px;text-align:center}
+.ym-weekdays span{font-size:10px;color:var(--muted)}
+.ym-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.ym-heat-cell,.ym-heat-pad{aspect-ratio:1/1;border-radius:7px;min-height:20px;min-width:0}
+.ym-heat-cell{border:1px solid var(--border);background:var(--panel2);color:var(--muted);font-size:11px;display:grid;place-items:center;padding:1px}
+.ym-heat-cell.level-1{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--text)}
+.ym-heat-cell.level-2{background:color-mix(in srgb,var(--accent) 65%,transparent);color:var(--text)}
+.ym-heat-cell.level-3{background:var(--accent);color:var(--on-accent,#fff)}
+.ym-heat-cell.level-0{background:var(--panel2);opacity:.72}
+.ym-heat-cell.empty{opacity:.38;border-style:dashed}
+.ym-heat-cell:focus-visible,.ym-heat-cell:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.ym-annual-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;padding-top:10px}
+.ym-mini-month{padding:12px;border:1px solid var(--border);border-radius:13px;background:var(--panel2);min-width:0}
+.ym-mini-month>button{display:block;border:0;background:transparent;color:var(--accent);font-size:12px;font-weight:900;margin-bottom:9px}
+.ym-mini-month .ym-month-chart{margin:0}.ym-mini-month .ym-heat-cell{font-size:0!important;border-radius:3px;min-height:5px;border-width:0}
+.ym-mini-month .ym-weekdays span{font-size:7px}.ym-mini-month .ym-month-grid,.ym-mini-month .ym-weekdays{gap:3px}
+#ymHeatStats,#ymHeatSelectedDay,#ymHeatCaption{margin:12px 0}
+.yq-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:14px 0 18px}
+.yq-stat{padding:18px;border:1px solid var(--border);border-radius:17px;background:var(--panel);min-width:0}
+.yq-stat small,.yq-stat span{font-size:11px;color:var(--muted);display:block}
+.yq-stat strong{display:block;font-size:22px;overflow-wrap:anywhere;margin:9px 0}
+.yq-stat .progress{margin:10px 0}
+.yq-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:15px 0}
+#page-quran .panel{min-width:0;margin-bottom:14px}
+#page-quran .panel h3{margin:0 0 12px}
+.yq-fields{display:flex;align-items:end;gap:9px;flex-wrap:wrap;margin:13px 0}
+.yq-fields label{display:block;flex:1 1 110px;min-width:0;color:var(--muted);font-size:11px;font-weight:800}
+.yq-fields input,.yq-fields select{display:block;width:100%;min-width:0;margin-top:6px;padding:9px}
+.yq-fields button{max-width:100%}
+#page-quran label{color:var(--muted);font-size:11px;font-weight:800}
+#yqSurahSearch{display:block;width:100%;margin:7px 0 9px}
+.yq-surah-list{max-height:143px;overflow-y:auto;display:flex;gap:6px;flex-wrap:wrap;align-content:start;padding:7px;border:1px solid var(--border);border-radius:11px}
+.yq-surah-list button{border-radius:9px;padding:8px;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:11px}
+.yq-surah-list button.selected{color:var(--accent);border-color:var(--accent);background:var(--accent-faint)}
+.yq-surah-list small{font-size:9px;color:var(--muted)}
+.yq-verses{max-height:330px;overflow-y:auto;margin:10px 0 15px;padding:15px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);line-height:2.6;font-size:18px;color:var(--text)}
+.yq-verse{padding:6px 0;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+.yq-verse-no{color:var(--accent);margin-left:7px;font-size:12px}
+#yqReflectionText{display:block;width:100%;min-height:95px;margin:8px 0}
+.yq-log{padding:11px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px}
+.yq-log span{color:var(--accent)}
+.yq-reflection{padding:15px 0;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+.yq-reflection div{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.yq-reflection small{color:var(--muted)}.yq-reflection p{font-size:12px;white-space:pre-wrap}
+.ym-rank-home{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:10px 15px;margin-bottom:14px}
+.ym-rank-home b{display:block;color:var(--text)}.ym-rank-home small{color:var(--muted);font-size:11px}
+.ym-rank-home>small:last-child{margin-inline-start:auto}
+.ym-rank-mini-icon{font-size:26px}
+.ym-rank-panel{border:1px solid var(--border);border-radius:20px;background:var(--panel);padding:20px;margin-bottom:20px}
+.ym-rank-current{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:25px}
+.ym-rank-medal{width:138px;height:148px;flex:0 0 138px;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 25%,color-mix(in srgb,var(--rank-color) 50%,transparent),var(--panel2) 85%);border:2px solid var(--rank-color);box-shadow:0 0 30px color-mix(in srgb,var(--rank-color) 20%,transparent)}
+.ym-rank-medal span{color:var(--rank-color);font-size:69px;text-shadow:0 0 12px var(--rank-color)}.ym-rank-medal small{font-size:10px;color:var(--rank-color);letter-spacing:1.5px;font-weight:900}
+.ym-rank-heading{min-width:0;flex:1}.ym-rank-heading h3{font-size:31px;margin:4px 0 6px}.ym-rank-heading small,.ym-rank-heading p{color:var(--muted);font-size:12px}
+.ym-rank-heading .progress{margin:13px 0}
+.ym-rank-ladder{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.ym-rank-step{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:15px 5px;border:1px solid var(--border);border-radius:14px;background:var(--panel2)}
+.ym-rank-step span{font-size:29px;color:var(--rank-color)}.ym-rank-step b{font-size:12px}.ym-rank-step small{color:var(--muted);font-size:10px}
+.ym-rank-step.locked{opacity:.4;filter:grayscale(.55)}
+.ym-rank-step.current{border-color:var(--rank-color);box-shadow:0 0 18px color-mix(in srgb,var(--rank-color) 20%,transparent);opacity:1}
+.ym-rank-disclaimer{margin:17px 0 0;color:var(--muted);font-size:11px}
+@media(max-width:960px){.ym-annual-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.yq-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.ym-heat-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-annual-grid{grid-template-columns:1fr 1fr;gap:7px}.ym-mini-month{padding:7px}.ym-rank-ladder{grid-template-columns:repeat(2,minmax(0,1fr))}.yq-stats{grid-template-columns:1fr}.yq-layout{grid-template-columns:1fr}.ym-rank-medal{width:100px;height:110px;flex-basis:100px}.ym-rank-medal span{font-size:46px}.ym-rank-heading h3{font-size:21px}.ym-water-home-config{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-heat-cell{font-size:10px}}
+@media(max-width:370px){.ym-water-home-config,.ym-heat-toolbar{grid-template-columns:1fr}.ym-mini-month .ym-weekdays span{font-size:0}.ym-annual-grid{grid-template-columns:1fr 1fr}}
