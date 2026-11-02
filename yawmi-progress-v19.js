@@ -26,7 +26,7 @@ if(!b){api().notify('اختر الكتاب الأول');return false}
 if(!n||n>1000){api().notify('أدخل عدد الصفحات المقروءة');return false}
 const total=N(b.totalPages),old=N(b.currentPage);
 if(!total||old>=total){api().notify('الكتاب مكتمل بالفعل');return false}
-const actual=Math.min(n,total-old),end=old+actual;
+const actual=Math.min(n,total-old),end=old+actual;const reading={id:uid(),bookId:b.id,from:old,to:end,pages:actual,date:today()};(state().bookReadings||(state().bookReadings=[])).push(reading);
 b.currentPage=end;b.highestPage=Math.max(N(b.highestPage),end);
 b.status=end>=total?'done':'reading';b.updatedAt=new Date().toISOString();
 if(end>=total&&!b.completedAt)b.completedAt=today();
@@ -37,6 +37,7 @@ api().save();api().render();
 api().notify(end>=total?'مبروك خلصت الكتاب! 🏆':'تم تسجيل القراءة ✓');
 return true;
 }
+function undoBook(id){const entries=Array.isArray(state().bookReadings)?state().bookReadings:[],last=entries[entries.length-1],book=books().find(b=>b.id===id);if(!book||!last||last.bookId!==id||N(book.currentPage)!==N(last.to)){api().notify('التراجع متاح لآخر قراءة مسجلة فقط');return}if(!confirm('التراجع عن آخر قراءة '+last.pages+' صفحة من «'+book.title+'»؟ سيتم تصحيح التقدم ونقاط القراءة المرتبطة بها.'))return;const d=state().daily[last.date];if(d?.habits)d.habits.reading=Math.max(0,N(d.habits.reading)-N(last.pages));book.currentPage=N(last.from);book.highestPage=N(last.from);book.status=N(last.from)===0?'unread':'reading';delete book.completedAt;book.updatedAt=new Date().toISOString();entries.pop();api().activity('book','تراجعت عن قراءة '+last.pages+' صفحة من '+book.title,today());api().save();api().render();window.YawmiExtras?.renderBooks();api().notify('تم تصحيح القراءة ✓')}
 function addQuran(pages){
 const n=N(pages);if(!n||n>604){api().notify('أدخل عدد صفحات صحيحًا');return}
 if(window.YawmiQuran?.addPages){window.YawmiQuran.addPages(n);return}
@@ -158,7 +159,7 @@ if(b.matches('[data-ym-restore-skills]')){state().hiddenSkills=[];api().rebuildS
 });
 renderGoals();renderSkills();
 }
-window.YawmiProgress={habitReader,habitQuran,recordBook,renderGoals,renderSkills,renderHistory,goalXP:(date)=>goals().filter(g=>g.completedAt===date).length*360,
+window.YawmiProgress={habitReader,habitQuran,recordBook,undoBook,renderGoals,renderSkills,renderHistory,goalXP:(date)=>goals().filter(g=>g.completedAt===date).length*360,
 bookBonus:(date)=>books().filter(b=>b.completedAt===date).length*420};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();
 })();
