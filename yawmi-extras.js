@@ -45,11 +45,11 @@ $('ymBookStatus').value=b?.status||'unread';$('ymBookRating').value=b?.rating||0
 function saveBook(ev){
 ev.preventDefault();const a=api(),books=library(),title=$('ymBookTitle').value.trim().slice(0,160),total=Math.floor(Number($('ymBookPages').value));let page=Math.floor(Number($('ymBookCurrent').value));
 if(!title||!Number.isFinite(total)||total<1||total>100000||!Number.isFinite(page)||page<0||page>total){$('ymBookFormError').textContent='أدخل عنوان الكتاب وصفحاته، وتأكد من صحة رقم الصفحة الحالية.';return}
-const old=books.find(x=>x.id===editId),highest=Math.max(0,Number(old?.highestPage??old?.currentPage)||0);
+const old=books.find(x=>x.id===editId),previousPage=Number(old?.currentPage)||0,highest=Math.max(0,Number(old?.highestPage??old?.currentPage)||0);
 let status=$('ymBookStatus').value;if(status==='done')page=total;if(page===total)status='done';else if(page>0&&status==='unread')status='reading';const delta=old?Math.max(0,page-highest):0;const completedNow=!!old&&page>=total&&!old.completedAt;
 const item={id:old?.id||a.uid(),title,totalPages:total,currentPage:page,highestPage:Math.max(highest,page),status,rating:Math.max(0,Math.min(5,Number($('ymBookRating').value)||0)),favorite:$('ymBookFavorite').checked,notes:$('ymBookNotes').value.trim().slice(0,4000),completedAt:page>=total?(old?.completedAt||(completedNow?a.today():undefined)):undefined,updatedAt:new Date().toISOString()};
 if(old)Object.assign(old,item);else books.push(item);
-if(delta>0){const s=a.getState(),today=a.today(),r=s.daily[today]||(s.daily[today]={habits:{},tasks:{},water:0,mood:0,note:''});r.habits=r.habits||{};(s.bookReadings||(s.bookReadings=[])).push({id:a.uid(),bookId:old.id,from:Number(old.currentPage)||0,to:page,pages:delta,date:today});r.habits.reading=(Number(r.habits.reading)||0)+delta;a.activity('book','قرأت '+delta+' صفحة من '+title,today)}else a.activity('book',(old?'عدلت: ':'أضفت: ')+title,a.today());
+if(delta>0){const s=a.getState(),today=a.today(),r=s.daily[today]||(s.daily[today]={habits:{},tasks:{},water:0,mood:0,note:''});r.habits=r.habits||{};(s.bookReadings||(s.bookReadings=[])).push({id:a.uid(),bookId:old.id,from:previousPage,to:page,pages:delta,date:today});r.habits.reading=(Number(r.habits.reading)||0)+delta;a.activity('book','قرأت '+delta+' صفحة من '+title,today)}else a.activity('book',(old?'عدلت: ':'أضفت: ')+title,a.today());
 a.save();$('ymBookDialog').close();a.render();renderBooks();a.notify('تم حفظ الكتاب ✓');
 }
 function setup(){
