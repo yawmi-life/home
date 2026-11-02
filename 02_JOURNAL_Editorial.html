@@ -283,7 +283,7 @@ function openSettings(){el('profileName').value=state.profile.name||'';let choos
  if(window.matchMedia){window.matchMedia('(prefers-color-scheme: light)').addEventListener?.('change',()=>{if(state.theme.mode==='auto')setTheme()})}
  let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;el('installBtn').hidden=false});el('installBtn').addEventListener('click',async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;el('installBtn').hidden=true}})
  if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
- window.YawmiExtraAPI={getState:()=>state,getScores:allScores,save,render,uid,activity,notify:toast,today:currentDay,applyTheme:setTheme,goBooks:()=>nav('books'),goHome:()=>nav('home'),openSettings};setTheme();nav('home');if(!fromDisk&&!window.YawmiCloud?.configured)save();
+ window.YawmiExtraAPI={getState:()=>state,getScores:allScores,save,render,uid,activity,notify:toast,today:currentDay,applyTheme:setTheme,goBooks:()=>nav('books'),goQuran:()=>nav('quran'),goHome:()=>nav('home'),openSettings};setTheme();nav('home');if(!fromDisk&&!window.YawmiCloud?.configured)save();
  window.YawmiCloud?.mount({
    getSnapshot:()=>structuredClone(state),
    replaceSnapshot:(remote, newUser=false)=>{
