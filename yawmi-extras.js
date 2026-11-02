@@ -29,10 +29,10 @@ const filters=[['all','كل الكتب'],['reading','أقرأه حاليًا'],[
 $('ymBooksFilters').innerHTML=filters.map(([k,t])=>'<button type="button" data-book-filter="'+k+'" class="'+(filter===k?'chosen':'')+'">'+t+'</button>').join('');
 const show=books.filter(b=>filter==='all'||filter==='favorite'&&b.favorite||b.status===filter);
 $('ymBooksGrid').innerHTML=show.length?show.map(b=>{
-const total=Math.max(1,Number(b.totalPages)||1),page=Math.max(0,Math.min(total,Number(b.currentPage)||0)),pct=Math.round(page/total*100);
+const total=Math.max(1,Number(b.totalPages)||1),page=Math.max(0,Math.min(total,Number(b.currentPage)||0)),pct=Math.round(page/total*100),latest=Array.isArray(state().bookReadings)?state().bookReadings[state().bookReadings.length-1]:null,canUndo=latest?.bookId===b.id&&Number(latest.to)===page;
 return '<article class="ym-book-card"><div class="ym-book-top"><div class="ym-book-cover">📖</div><div class="ym-book-text"><h3>'+esc(b.title)+'</h3><span>'+statusLabel[b.status]+'</span></div><button class="ym-favorite '+(b.favorite?'yes':'')+'" data-book-fav="'+esc(b.id)+'" aria-label="المفضلة">'+(b.favorite?'★':'☆')+'</button></div>'
 +'<div class="ym-book-progress"><div class="ym-book-numbers"><b>'+pct+'% مكتمل</b><span>'+page+' / '+total+' صفحة</span></div><div class="progress"><i style="width:'+pct+'%"></i></div></div>'
-+'<div class="ym-book-bottom"><div class="ym-book-stars">'+[1,2,3,4,5].map(n=>'<button data-book-rate="'+esc(b.id)+'" data-stars="'+n+'" class="'+(n<=b.rating?'lit':'')+'" aria-label="'+n+' نجوم">★</button>').join('')+'</div><button type="button" class="btn soft" data-book-edit="'+esc(b.id)+'">تعديل وتسجيل صفحات</button></div>'
++'<div class="ym-book-bottom"><div class="ym-book-stars">'+[1,2,3,4,5].map(n=>'<button data-book-rate="'+esc(b.id)+'" data-stars="'+n+'" class="'+(n<=b.rating?'lit':'')+'" aria-label="'+n+' نجوم">★</button>').join('')+'</div><button type="button" class="btn soft" data-book-edit="'+esc(b.id)+'">تعديل وتسجيل صفحات</button>'+(canUndo?'<button class="btn soft" type="button" data-ym-undo-book="'+esc(b.id)+'">↶ التراجع عن آخر قراءة</button>':'')+'</div>'
 +(b.notes?'<p class="ym-book-notes">'+esc(b.notes)+'</p>':'')+'</article>';
 }).join(''):'<div class="ym-empty">مفيش كتب هنا حاليًا. ابدأ بإضافة كتاب جديد.</div>';
 }
@@ -49,7 +49,7 @@ const old=books.find(x=>x.id===editId),highest=Math.max(0,Number(old?.highestPag
 let status=$('ymBookStatus').value;if(status==='done')page=total;if(page===total)status='done';else if(page>0&&status==='unread')status='reading';const delta=old?Math.max(0,page-highest):0;const completedNow=!!old&&page>=total&&!old.completedAt;
 const item={id:old?.id||a.uid(),title,totalPages:total,currentPage:page,highestPage:Math.max(highest,page),status,rating:Math.max(0,Math.min(5,Number($('ymBookRating').value)||0)),favorite:$('ymBookFavorite').checked,notes:$('ymBookNotes').value.trim().slice(0,4000),completedAt:page>=total?(old?.completedAt||(completedNow?a.today():undefined)):undefined,updatedAt:new Date().toISOString()};
 if(old)Object.assign(old,item);else books.push(item);
-if(delta>0){const s=a.getState(),today=a.today(),r=s.daily[today]||(s.daily[today]={habits:{},tasks:{},water:0,mood:0,note:''});r.habits=r.habits||{};r.habits.reading=(Number(r.habits.reading)||0)+delta;a.activity('book','قرأت '+delta+' صفحة من '+title,today)}else a.activity('book',(old?'عدلت: ':'أضفت: ')+title,a.today());
+if(delta>0){const s=a.getState(),today=a.today(),r=s.daily[today]||(s.daily[today]={habits:{},tasks:{},water:0,mood:0,note:''});r.habits=r.habits||{};(s.bookReadings||(s.bookReadings=[])).push({id:a.uid(),bookId:old.id,from:Number(old.currentPage)||0,to:page,pages:delta,date:today});r.habits.reading=(Number(r.habits.reading)||0)+delta;a.activity('book','قرأت '+delta+' صفحة من '+title,today)}else a.activity('book',(old?'عدلت: ':'أضفت: ')+title,a.today());
 a.save();$('ymBookDialog').close();a.render();renderBooks();a.notify('تم حفظ الكتاب ✓');
 }
 function setup(){
@@ -58,7 +58,7 @@ $('ymAddBook').addEventListener('click',()=>openBook(null));$('ymBookCancel').ad
 $('ymBookDelete').addEventListener('click',()=>{const books=library(),i=books.findIndex(b=>b.id===editId);if(i>=0&&confirm('حذف الكتاب من مكتبتك؟')){const name=books[i].title;books.splice(i,1);api().activity('book','حذفت كتاب: '+name,api().today());api().save();$('ymBookDialog').close();api().render()}});
 document.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;
 if(b.dataset.bookFilter){filter=b.dataset.bookFilter;renderBooks()}
-if(b.dataset.bookEdit)openBook(b.dataset.bookEdit);
+if(b.dataset.bookEdit)openBook(b.dataset.bookEdit);if(b.dataset.ymUndoBook)window.YawmiProgress?.undoBook(b.dataset.ymUndoBook);
 if(b.dataset.bookFav){const x=library().find(x=>x.id===b.dataset.bookFav);if(x){x.favorite=!x.favorite;api().save();renderBooks()}}
 if(b.dataset.bookRate){const x=library().find(x=>x.id===b.dataset.bookRate);if(x){x.rating=Number(b.dataset.stars);api().save();renderBooks()}}
 });
