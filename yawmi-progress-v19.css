@@ -37,3 +37,9 @@
 #page-goals{min-width:0}
 #ymActionControls{gap:8px}
 @media(max-width:640px){.ym-goal-grid{grid-template-columns:1fr}.ym-reading-habit .habit-copy{flex-basis:180px}.ym-habit-inline input{width:59px}.ym-history-tools{align-items:stretch}.ym-history-tools button{flex:1 1 auto}}
+
+/* YAWMI v21: custom page count, add/remove and finish-target button. */
+.ym-habit-inline .ym-reading-pages{flex:0 0 94px;width:94px;max-width:110px;min-width:72px;text-align:center;font-size:13px;font-weight:700}
+.ym-habit-inline .small-btn{flex:0 0 35px;width:35px;min-width:35px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;font-weight:800;font-size:17px}
+.ym-habit-inline .ym-complete-reading{background:var(--accent-faint);border:1px solid var(--accent);color:var(--accent)}
+@media(max-width:430px){.ym-habit-inline select{flex:1 1 100%;max-width:100%}.ym-habit-inline .ym-reading-pages{flex:1 1 90px;min-width:75px}.ym-habit-inline{gap:6px}}
