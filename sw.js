@@ -1,5 +1,5 @@
 /* YAWMI v11: static shell cache only. Never cache auth, Supabase API or personal data. */
-const CACHE='yawmi-v15-public-shell';
+const CACHE='yawmi-v16-public-shell';
 const STATIC=['index.html','auth.html','01_ATLAS_Executive.html','02_JOURNAL_Editorial.html','03_QUEST_RPG.html','cloud.js','config.js','mobile-fix.css','yawmi-extras.js','yawmi-extras.css','yawmi-v15.css','yawmi-quran.js','yawmi-insights.js','yawmi-rank.js','manifest.webmanifest','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC.map(s=>'./'+s))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
