@@ -1,7 +1,7 @@
 /* YAWMI v14: navigation drawer and personal book library. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id), esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const api=()=>window.YawmiExtraAPI,library=()=>{const s=api().getState();if(!Array.isArray(s.books))s.books=[];return s.books};
+const api=()=>window.YawmiExtraAPI,state=()=>api()?.getState(),library=()=>{const s=state();if(!s)return [];if(!Array.isArray(s.books))s.books=[];return s.books};
 let filter='all',editId=null;
 const statusLabel={unread:'لم أقرأه بعد',reading:'أقرأه حاليًا',done:'تمت القراءة'};
 function drawer(){
