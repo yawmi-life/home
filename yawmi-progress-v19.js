@@ -94,6 +94,7 @@ const before=N(g.progress),p=Math.min(N(g.target),before+n);
 if(p===before)return;
 g.progress=p;
 if(p===N(g.target)&&!g.completedAt)g.completedAt=today();
+const d=rec(),goalTarget=Math.max(1,N(g.target)),beforePoints=Math.round(110*Math.pow(before/goalTarget,2.32)),afterPoints=Math.round(110*Math.pow(p/goalTarget,2.32));d.goalXp=Math.max(0,N(d.goalXp)+Math.max(0,afterPoints-beforePoints));
 api().activity('goal','تقدمت '+(p-before)+' '+g.unit+' في '+g.title,today());
 api().save();api().render();renderGoals();
 api().notify(p===N(g.target)?'مبروك تحقيق هدفك! 🏆':'إنجاز جديد ✓');
@@ -101,11 +102,13 @@ api().notify(p===N(g.target)?'مبروك تحقيق هدفك! 🏆':'إنجاز 
 function saveGoal(e){
 e.preventDefault();const title=$('ymGoalTitle').value.trim().slice(0,140),target=N($('ymGoalTarget').value),progress=N($('ymGoalProgress').value);
 if(!title||target<1||target>100000||progress>target){api().notify('راجع اسم الهدف والقيم');return}
-let g=goals().find(x=>x.id===editingGoal),prevComplete=Boolean(g?.completedAt);
+let g=goals().find(x=>x.id===editingGoal),prevComplete=Boolean(g?.completedAt),previousProgress=g?N(g.progress):0;
 const data={title,kind:$('ymGoalType').value,unit:$('ymGoalUnit').value,target,progress};
 if(!g){g={id:uid(),...data};goals().push(g)}else Object.assign(g,data);
 if(progress>=target&&!prevComplete)g.completedAt=today();
 if(progress<target)delete g.completedAt;
+if(g&&previousProgress<progress){const oldPoints=Math.round(110*Math.pow(Math.min(1,previousProgress/target),2.32)),newPoints=Math.round(110*Math.pow(Math.min(1,progress/target),2.32));const d=rec();d.goalXp=Math.max(0,N(d.goalXp)+Math.max(0,newPoints-oldPoints))}
+if(g.completedAt)rec();
 api().activity('goal','حفظت الهدف: '+title,today());
 $('ymGoalDialog').close();api().save();api().render();renderGoals();
 }
