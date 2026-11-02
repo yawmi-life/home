@@ -13,7 +13,7 @@ const q=books().length?N(books().reduce((n,b)=>n+(state().bookReadings||[]).filt
 const sel=state().readingBookId;
 let id=options.find(x=>x.id===sel)?.id||options.find(x=>x.status==='reading')?.id||options[0]?.id;
 const choices=options.map(b=>'<option value="'+esc(b.id)+'" '+(b.id===id?'selected':'')+'>'+esc(b.title)+' · '+N(b.currentPage)+'/'+N(b.totalPages)+'</option>').join('');
-return '<div class="habit-line ym-reading-habit '+(q>=goal?'met':'')+'"><span class="icon-tile">📘</span><div class="habit-copy"><b>'+esc(h.title)+'</b><small>اليوم: '+q+' / '+goal+' صفحة</small><div class="ym-habit-inline">'+(choices?'<select aria-label="الكتاب" class="ym-reading-book">'+choices+'</select><button class="small-btn" type="button" data-ym-book-minus aria-label="تقليل الصفحات">−</button><input type="number" aria-label="عدد الصفحات للتعديل" class="ym-reading-pages" min="1" max="1000" value="5"><button class="small-btn plus" type="button" data-ym-read-book aria-label="إضافة الصفحات">＋</button><button class="btn soft" type="button" data-ym-zero-reading>تصحيح قراءة اليوم</button>':'<button class="btn soft" type="button" data-ym-open-books>＋ أضف كتابًا لمكتبتك</button>')+'</div></div></div>';
+return '<div class="habit-line ym-reading-habit '+(q>=goal?'met':'')+'"><span class="icon-tile">📘</span><div class="habit-copy"><b>'+esc(h.title)+'</b><small>اليوم: '+q+' / '+goal+' صفحة</small><div class="ym-habit-inline">'+(choices?'<select aria-label="الكتاب" class="ym-reading-book">'+choices+'</select><input type="number" inputmode="numeric" aria-label="عدد الصفحات المراد إضافتها أو خصمها" class="ym-reading-pages" min="1" max="1000" step="1" placeholder="الصفحات" value=""><button class="small-btn" type="button" data-ym-book-minus title="خصم العدد المكتوب من تقدم الكتاب" aria-label="خصم الصفحات المكتوبة">−</button><button class="small-btn plus" type="button" data-ym-read-book title="إضافة العدد المكتوب إلى تقدم الكتاب" aria-label="إضافة الصفحات المكتوبة">＋</button><button class="small-btn ym-complete-reading" type="button" data-ym-check-book title="إكمال الهدف اليومي للقراءة" aria-label="إكمال هدف القراءة اليوم">✓</button>':'<button class="btn soft" type="button" data-ym-open-books>＋ أضف كتابًا لمكتبتك</button>')+'</div></div></div>';
 }
 function recExisting(day){return state().daily?.[day]||{habits:{}}}
 function habitQuran(h,day){
@@ -23,7 +23,7 @@ return '<div class="habit-line ym-reading-habit '+(q>=goal?'met':'')+'"><span cl
 function recordBook(id,pages){
 const b=books().find(x=>x.id===id),n=N(pages);
 if(!b){api().notify('اختر الكتاب الأول');return false}
-if(!n||n>1000){api().notify('أدخل عدد الصفحات المقروءة');return false}
+if(!Number.isInteger(Number(pages))||n<1||n>1000){api().notify('اكتب عدد صفحات صحيحًا أولًا');return false}
 const total=N(b.totalPages),old=N(b.currentPage);
 if(!total||old>=total){api().notify('الكتاب مكتمل بالفعل');return false}
 const actual=Math.min(n,total-old),end=old+actual;const reading={id:uid(),bookId:b.id,from:old,to:end,pages:actual,date:today()};(state().bookReadings||(state().bookReadings=[])).push(reading);
@@ -41,7 +41,7 @@ function undoBook(id){const entries=Array.isArray(state().bookReadings)?state().
 function reduceBook(id,pages,quiet=false){
 const b=books().find(x=>x.id===id),n=N(pages);
 if(!b){api().notify('اختر الكتاب أولًا');return false}
-if(!n||n>1000){api().notify('حدد عدد صفحات صحيحًا');return false}
+if(!Number.isInteger(Number(pages))||n<1||n>1000){api().notify('اكتب عدد صفحات صحيحًا أولًا');return false}
 const previous=N(b.currentPage),taken=Math.min(previous,n);
 if(!taken){api().notify('لا توجد صفحات لتقليلها');return false}
 const entries=Array.isArray(state().bookReadings)?state().bookReadings:(state().bookReadings=[]);
@@ -61,21 +61,6 @@ if(!quiet)api().activity('book','صححت موضع '+b.title+' بمقدار '+ta
 api().save();api().render();window.YawmiExtras?.renderBooks();
 if(!quiet)api().notify('تم تعديل الصفحات وتحديث النقاط ✓');
 return true;
-}
-function zeroTodayBookReadings(){
-const d=state().daily[today()];if(!d?.habits?.reading)return;
-if(!confirm('تصحيح قراءة اليوم؟ سيتم تصفير عداد قراءة الكتب اليوم، وإلغاء جلسات القراءة المسجلة اليوم وإرجاع مواضعها، مع تحديث XP.'))return;
-const entries=Array.isArray(state().bookReadings)?state().bookReadings:(state().bookReadings=[]);
-const byBook={};
-for(const e of entries){if(e.date===today())byBook[e.bookId]=(byBook[e.bookId]||0)+N(e.pages)}
-for(const [id,n] of Object.entries(byBook)){
- const b=books().find(x=>x.id===id);if(!b)continue;
- b.currentPage=Math.max(0,N(b.currentPage)-n);b.highestPage=b.currentPage;
- b.status=b.currentPage===0?'unread':'reading';delete b.completedAt;b.updatedAt=new Date().toISOString();
-}
-state().bookReadings=entries.filter(x=>x.date!==today());
-d.habits.reading=0;api().activity('book','صححت سجل قراءة الكتب اليوم',today());
-api().save();api().render();window.YawmiExtras?.renderBooks();api().notify('تم تصفير قراءة اليوم وتحديث الرتبة');
 }
 function adjustGoalEntries(g,newProgress){
 const old=N(g.progress),now=N(newProgress),events=Array.isArray(g.progressEntries)?g.progressEntries:(g.progressEntries=[]);
@@ -191,7 +176,7 @@ if(b.matches('[data-ym-open-books]'))api().goBooks();
 if(b.matches('[data-ym-open-quran]'))api().goQuran();
 if(b.matches('[data-ym-read-book]')){const row=b.closest('.ym-reading-habit');if(row)recordBook(row.querySelector('.ym-reading-book')?.value,Number(row.querySelector('.ym-reading-pages')?.value))}
 if(b.matches('[data-ym-book-minus]')){const row=b.closest('.ym-reading-habit');if(row)reduceBook(row.querySelector('.ym-reading-book')?.value,Number(row.querySelector('.ym-reading-pages')?.value))}
-if(b.matches('[data-ym-zero-reading]'))zeroTodayBookReadings();
+if(b.matches('[data-ym-check-book]')){const row=b.closest('.ym-reading-habit'),bookId=row?.querySelector('.ym-reading-book')?.value;const h=state().habits?.find(x=>x.id==='reading');const goal=Math.max(1,N(h?.target));const completed=(state().bookReadings||[]).reduce((sum,r)=>sum+(r.date===today()&&books().some(b=>b.id===r.bookId)?N(r.pages):0),0);const remaining=Math.max(0,goal-completed);if(!remaining){api().notify('حققت هدف القراءة اليوم بالفعل ✓');return}recordBook(bookId,remaining);}
 if(b.matches('[data-ym-read-quran]')){const row=b.closest('.ym-reading-habit');if(row)addQuran(Number(row.querySelector('.ym-quran-pages')?.value))}
 if(b.matches('[data-ym-remove-log]'))deleteLog([b.dataset.ymRemoveLog]);
 if(b.matches('[data-ym-remove-selected]'))deleteLog([...selectedHistory]);
