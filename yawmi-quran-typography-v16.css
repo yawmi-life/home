@@ -4,7 +4,7 @@
  * Typeface is fetched from Google Fonts, with local fallbacks if offline.
  * Upload to the ROOT of yawmi-life/home repo. All 3 live themes reference this file.
  */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Noto+Naskh+Arabic:wght@400;500;700&display=swap');
 
 #page-quran .yq-verses {
   box-sizing: border-box;
@@ -24,7 +24,7 @@
   color: #f8f5eb;
   direction: rtl;
   text-align: right;
-  font-family: 'Noto Naskh Arabic', 'Amiri Quran', 'Amiri', 'Traditional Arabic', serif !important;
+  font-family: 'Amiri Quran', 'Noto Naskh Arabic', 'Amiri', 'Traditional Arabic', serif !important;
   font-size: clamp(24px, 2.5vw, 30px);
   font-weight: 400 !important;
   font-style: normal;
