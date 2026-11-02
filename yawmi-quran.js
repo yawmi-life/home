@@ -20,8 +20,8 @@ $('yqCurrentPage').value=q.page;
 const chosen=$('yqAnnualYear');const before=chosen.value;chosen.innerHTML=years.map(y=>'<option value="'+y+'">'+y+'</option>').join('');chosen.value=years.includes(before)?before:current;
 const yearly=chosen.value;
 $('yqYearTotal').textContent=(byYear[yearly]||0)+' ختمة في '+yearly;
-$('yqKhatmaList').innerHTML=q.khatmas.filter(k=>String(k.date).startsWith(yearly)).slice().reverse().map((k,i)=>'<div class="yq-log">🏅 ختمة · '+readableDate(k.date)+' <span>رقم '+(q.khatmas.indexOf(k)+1)+'</span></div>').join('')||'<p class="muted">لا توجد ختمات مسجلة لهذه السنة.</p>';
-$('yqReadingHistory').innerHTML=q.readings.slice(-14).reverse().map(r=>'<div class="yq-log">📖 '+readableDate(r.date)+' <span>+'+r.pages+' صفحات'+(r.endPage?' · وصول إلى '+r.endPage:'')+'</span></div>').join('')||'<p class="muted">ابدأ بتسجيل أول قراءة.</p>';
+$('yqKhatmaList').innerHTML=q.khatmas.filter(k=>String(k.date).startsWith(yearly)).slice().reverse().map((k,i)=>'<div class="yq-log">🏅 ختمة · '+readableDate(k.date)+' <span>رقم '+(q.khatmas.indexOf(k)+1)+'</span><button type="button" class="ym-trash" data-yq-delete-khatma="'+esc(k.id)+'" aria-label="حذف هذه الختمة">🗑</button></div>').join('')||'<p class="muted">لا توجد ختمات مسجلة لهذه السنة.</p>';
+$('yqReadingHistory').innerHTML=q.readings.slice(-14).reverse().map(r=>'<div class="yq-log">📖 '+readableDate(r.date)+' <span>+'+r.pages+' صفحات'+(r.endPage?' · وصول إلى '+r.endPage:'')+'</span>'+(q.readings[q.readings.length-1]===r?'<button type="button" class="ym-trash" data-yq-delete-reading="'+esc(r.id)+'" aria-label="التراجع عن آخر قراءة">🗑</button>':'')+'</div>').join('')||'<p class="muted">ابدأ بتسجيل أول قراءة.</p>';
 $('yqReflections').innerHTML=q.reflections.slice().reverse().map(r=>'<article class="yq-reflection"><div><b>'+esc(r.surahName)+' · '+(r.selection==='all'?'السورة كاملة':r.from===r.to?'آية '+r.from:'من آية '+r.from+' إلى '+r.to)+'</b><small>'+readableDate(r.date)+'</small></div><p>'+esc(r.note)+'</p><button class="btn soft" type="button" data-yq-remove="'+esc(r.id)+'">حذف الملاحظة</button></article>').join('')||'<p class="muted">اكتب أول معنى تدبرته واحتفظ به في حسابك.</p>';
 }
 async function getChapters(){
@@ -70,15 +70,39 @@ if(to<from)to=from;
 const shown=type==='all'?verses:type==='single'?verses.filter(v=>v.number===from):verses.filter(v=>v.number>=from&&v.number<=to);
 $('yqVerseList').innerHTML=shown.map(v=>'<div class="yq-verse"><span class="yq-verse-no">﴿'+v.number+'﴾</span> '+esc(v.text)+'</div>').join('');
 }
-function recordPages(){
-const q=state(),n=Number($('yqPagesAdd').value);if(!Number.isInteger(n)||n<1||n>604){app().notify('أدخل عدد صفحات من 1 إلى 604');return}
-let left=n,at=q.page,finished=0;
-while(left>0){const before=at===604?0:at;const take=Math.min(left,604-before);at=before+take;left-=take;if(at===604){q.khatmas.push({date:date(),at:new Date().toISOString(),id:app().uid()});finished++}}
+function addPages(value){
+const q=state(),n=Number(value);if(!Number.isInteger(n)||n<1||n>604){app().notify('أدخل عدد صفحات من 1 إلى 604');return false}
+let left=n,at=q.page,finished=0;const readId=app().uid(),startPage=at;
+while(left>0){
+ const before=at===604?0:at,take=Math.min(left,604-before);
+ at=before+take;left-=take;
+ if(at===604){q.khatmas.push({date:date(),at:new Date().toISOString(),id:app().uid(),readId});finished++}
+}
 q.page=at;
-q.readings.push({date:date(),at:new Date().toISOString(),pages:n,endPage:at,id:app().uid()});
-const s=app().getState(),d=s.daily[date()]||(s.daily[date()]={habits:{},tasks:{},water:0,mood:0,note:''});d.habits=d.habits||{};d.habits.quran=Math.max(0,Number(d.habits.quran)||0)+n;
+q.readings.push({date:date(),at:new Date().toISOString(),pages:n,startPage,endPage:at,id:readId});
+const a=app().getState(),d=a.daily[date()]||(a.daily[date()]={habits:{},tasks:{},water:0,mood:0,note:''});
+d.habits=d.habits||{};d.habits.quran=Math.max(0,Number(d.habits.quran)||0)+n;
 app().activity('quran','قرأت '+n+' صفحة '+(finished?'وأتممت '+finished+' ختمة':'')+' من القرآن',date());
 $('yqPagesAdd').value='';app().save();app().render();app().notify(finished?'مبارك إتمام الختمة! 🌿':'تم تسجيل الورد ✓');
+return true;
+}
+function recordPages(){addPages(Number($('yqPagesAdd').value))}
+function deleteKhatma(id){
+const q=state(),k=q.khatmas.find(x=>x.id===id);if(!k)return;
+if(!confirm('حذف الختمة بتاريخ '+readableDate(k.date)+'؟ سيتم إلغاء مكافأة الختمة من رصيد XP، بينما تظل الصفحات المقروءة مسجلة.'))return;
+q.khatmas=q.khatmas.filter(x=>x.id!==id);
+app().activity('quran','حذفت ختمة مسجلة بتاريخ '+k.date,date());
+app().save();app().render();app().notify('تم حذف الختمة');
+}
+function undoLatestReading(id){
+const q=state(),r=q.readings[q.readings.length-1];if(!r||r.id!==id)return;
+if(!confirm('التراجع عن آخر قراءة ('+r.pages+' صفحة)؟ سيُخصم سجل الصفحات ومكافآت الختمات الناتجة عن هذه القراءة.'))return;
+q.readings.pop();const all=q.khatmas.length;
+q.khatmas=q.khatmas.filter(x=>x.readId!==r.id);
+if(Number.isInteger(+r.startPage))q.page=Math.max(0,Math.min(604,+r.startPage));
+const d=app().getState().daily[r.date];if(d?.habits)d.habits.quran=Math.max(0,(Number(d.habits.quran)||0)-(Number(r.pages)||0));
+app().activity('quran','تراجعت عن آخر قراءة: '+r.pages+' صفحة',date());
+app().save();app().render();app().notify('تم التراجع عن القراءة');
 }
 function setPage(){
 const val=Number($('yqCurrentPage').value);if(!Number.isInteger(val)||val<0||val>604){app().notify('رقم الصفحة لازم يكون من 0 إلى 604');return}
@@ -101,9 +125,9 @@ $('yqSurahResults').addEventListener('click',e=>{const b=e.target.closest('[data
 $('yqSelectionType').addEventListener('change',renderVerses);
 $('yqFrom').addEventListener('change',updatePreview);$('yqTo').addEventListener('change',updatePreview);
 $('yqReflectionSave').addEventListener('click',saveReflection);
-$('yqReflections').addEventListener('click',e=>{const btn=e.target.closest('[data-yq-remove]');if(btn&&confirm('حذف التدبر؟')){const q=state();q.reflections=q.reflections.filter(x=>x.id!==btn.dataset.yqRemove);app().save();render()}});
+$('yqReflections').addEventListener('click',e=>{const btn=e.target.closest('[data-yq-remove]');if(btn&&confirm('حذف التدبر؟')){const q=state();q.reflections=q.reflections.filter(x=>x.id!==btn.dataset.yqRemove);app().save();render()}});$('yqKhatmaList').addEventListener('click',e=>{const btn=e.target.closest('[data-yq-delete-khatma]');if(btn)deleteKhatma(btn.dataset.yqDeleteKhatma)});$('yqReadingHistory').addEventListener('click',e=>{const btn=e.target.closest('[data-yq-delete-reading]');if(btn)undoLatestReading(btn.dataset.yqDeleteReading)});
 render();
 getChapters().then(()=>{renderChapters();loadVerses(1)}).catch(err=>{$('yqVerseStatus').textContent='تحتاج اتصالًا بالإنترنت لعرض سور القرآن وآياتها: '+err.message});
 }
-window.YawmiQuran={render};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();
+window.YawmiQuran={render,addPages};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();
 })();
