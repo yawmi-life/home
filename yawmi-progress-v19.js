@@ -140,7 +140,7 @@ const g=goals().find(x=>x.id===id),n=N(amount);
 if(!g||!n)return;
 const before=N(g.progress),p=Math.min(N(g.target),before+n);
 if(p===before)return;
-adjustGoalEntries(g,p);g.progress=p;
+rec();adjustGoalEntries(g,p);g.progress=p;
 if(p===N(g.target)&&!g.completedAt)g.completedAt=today();
 api().activity('goal','تقدمت '+(p-before)+' '+g.unit+' في '+g.title,today());
 api().save();api().render();renderGoals();
@@ -151,7 +151,7 @@ e.preventDefault();const title=$('ymGoalTitle').value.trim().slice(0,140),target
 if(!title||target<1||target>100000||progress>target){api().notify('راجع اسم الهدف والقيم');return}
 let g=goals().find(x=>x.id===editingGoal),prevComplete=Boolean(g?.completedAt);
 const data={title,kind:$('ymGoalType').value,unit:$('ymGoalUnit').value,target,progress};
-if(!g){g={id:uid(),...data,progress:0,progressEntries:[]};goals().push(g)}adjustGoalEntries(g,progress);Object.assign(g,data);
+if(!g){g={id:uid(),...data,progress:0,progressEntries:[]};goals().push(g)}if(progress!==N(g.progress))rec();adjustGoalEntries(g,progress);Object.assign(g,data);
 if(progress>=target&&!prevComplete)g.completedAt=today();
 if(progress<target)delete g.completedAt;
 api().activity('goal','حفظت الهدف: '+title,today());
