@@ -12,7 +12,7 @@ side.innerHTML='<header class="ym-menu-head"><div><b>يومي LifeOS</b><small>�
 +'<div class="ym-menu-body"><div class="ym-menu-identity" id="ymMenuIdentity"></div><button class="ym-menu-link" data-yam-action="account">👤 <span>الاسم والحساب</span></button><button class="ym-menu-link" data-yam-action="books">📚 <span>مكتبتي وكتبي</span></button><button class="ym-menu-link" data-yam-action="quran">📿 <span>القرآن والختمات والتدبر</span></button>'
 +'<label class="ym-menu-label" for="ymSkin">تصميم التطبيق</label><select id="ymSkin"><option value="01_ATLAS_Executive.html">ATLAS · لوحة القيادة</option><option value="02_JOURNAL_Editorial.html">JOURNAL · المفكرة</option><option value="03_QUEST_RPG.html">QUEST · المستويات</option></select>'
 +'<label class="ym-menu-label">الوضع</label><div class="ym-seg"><button data-yam-mode="light">☀ فاتح</button><button data-yam-mode="dark">☾ داكن</button><button data-yam-mode="auto">◐ تلقائي</button></div>'
-+'<button class="ym-menu-link" data-yam-action="install">📲 <span>تثبيت التطبيق</span></button><button class="ym-menu-link" data-yam-action="settings">⚙️ <span>الإعدادات</span></button><button class="ym-menu-link" data-yam-action="home">⌂ <span>الرئيسية</span></button>'
++'<button class="ym-menu-link" data-yam-action="goals">🎯 <span>أهدافي وكورساتي ومشاريعي</span></button><button class="ym-menu-link" data-yam-action="install">📲 <span>تثبيت التطبيق</span></button><button class="ym-menu-link" data-yam-action="settings">⚙️ <span>الإعدادات</span></button><button class="ym-menu-link" data-yam-action="home">⌂ <span>الرئيسية</span></button>'
 +'<p id="ymInstallHelp" class="ym-help" hidden>على أندرويد افتح Chrome ثم ⋮ ثم «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».</p></div>';
 document.body.append(shade,side);
 const close=()=>{side.hidden=true;shade.hidden=true;document.body.classList.remove('ym-menu-open')};
@@ -20,7 +20,7 @@ const open=()=>{const name=String(api()?.getState()?.profile?.name||'المست�
 $('yawmiMenuBtn').addEventListener('click',open);$('ymClose').addEventListener('click',close);shade.addEventListener('click',close);document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!side.hidden)close()});
 $('ymSkin').addEventListener('change',ev=>{close();const s=$('skinSwitch');s.value=ev.target.value;s.dispatchEvent(new Event('change',{bubbles:true}))});
 side.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.yamMode){api().getState().theme.mode=b.dataset.yamMode;api().applyTheme();api().save();document.querySelectorAll('[data-yam-mode]').forEach(x=>x.classList.toggle('is-selected',x===b));return}
-const action=b.dataset.yamAction;if(!action)return;if(action==='install'){const ib=$('installBtn');if(ib&&!ib.hidden){close();ib.click()}else $('ymInstallHelp').hidden=!$('ymInstallHelp').hidden;return}close();if(action==='account')$('yawmiAccountBtn').click();if(action==='settings')api().openSettings();if(action==='books')api().goBooks();if(action==='quran')api().goQuran();if(action==='home')api().goHome()});
+const action=b.dataset.yamAction;if(!action)return;if(action==='install'){const ib=$('installBtn');if(ib&&!ib.hidden){close();ib.click()}else $('ymInstallHelp').hidden=!$('ymInstallHelp').hidden;return}close();if(action==='account')$('yawmiAccountBtn').click();if(action==='settings')api().openSettings();if(action==='books')api().goBooks();if(action==='quran')api().goQuran();if(action==='goals')api().goGoals();if(action==='home')api().goHome()});
 }
 function renderBooks(){
 if(!api()||!$('ymBooksGrid'))return;
@@ -45,11 +45,11 @@ $('ymBookStatus').value=b?.status||'unread';$('ymBookRating').value=b?.rating||0
 function saveBook(ev){
 ev.preventDefault();const a=api(),books=library(),title=$('ymBookTitle').value.trim().slice(0,160),total=Math.floor(Number($('ymBookPages').value));let page=Math.floor(Number($('ymBookCurrent').value));
 if(!title||!Number.isFinite(total)||total<1||total>100000||!Number.isFinite(page)||page<0||page>total){$('ymBookFormError').textContent='أدخل عنوان الكتاب وصفحاته، وتأكد من صحة رقم الصفحة الحالية.';return}
-const old=books.find(x=>x.id===editId),highest=Math.max(0,Number(old?.highestPage??old?.currentPage)||0),delta=Math.max(0,page-highest);
-let status=$('ymBookStatus').value;if(status==='done')page=total;if(page===total)status='done';else if(page>0&&status==='unread')status='reading';
-const item={id:old?.id||a.uid(),title,totalPages:total,currentPage:page,highestPage:Math.max(highest,page),status,rating:Math.max(0,Math.min(5,Number($('ymBookRating').value)||0)),favorite:$('ymBookFavorite').checked,notes:$('ymBookNotes').value.trim().slice(0,4000),updatedAt:new Date().toISOString()};
+const old=books.find(x=>x.id===editId),highest=Math.max(0,Number(old?.highestPage??old?.currentPage)||0);
+let status=$('ymBookStatus').value;if(status==='done')page=total;if(page===total)status='done';else if(page>0&&status==='unread')status='reading';const delta=old?Math.max(0,page-highest):0;const completedNow=!!old&&page>=total&&!old.completedAt;
+const item={id:old?.id||a.uid(),title,totalPages:total,currentPage:page,highestPage:Math.max(highest,page),status,rating:Math.max(0,Math.min(5,Number($('ymBookRating').value)||0)),favorite:$('ymBookFavorite').checked,notes:$('ymBookNotes').value.trim().slice(0,4000),completedAt:page>=total?(old?.completedAt||(completedNow?a.today():undefined)):undefined,updatedAt:new Date().toISOString()};
 if(old)Object.assign(old,item);else books.push(item);
-if(delta>0){const s=a.getState(),today=a.today(),r=s.daily[today]||(s.daily[today]={habits:{},tasks:{},water:0,mood:0,note:''});r.bookXp=(Number(r.bookXp)||0)+Math.min(delta,200);a.activity('book','قرأت '+delta+' صفحة من '+title,today)}else a.activity('book',(old?'عدلت: ':'أضفت: ')+title,a.today());
+if(delta>0){const s=a.getState(),today=a.today(),r=s.daily[today]||(s.daily[today]={habits:{},tasks:{},water:0,mood:0,note:''});r.habits=r.habits||{};r.habits.reading=(Number(r.habits.reading)||0)+delta;a.activity('book','قرأت '+delta+' صفحة من '+title,today)}else a.activity('book',(old?'عدلت: ':'أضفت: ')+title,a.today());
 a.save();$('ymBookDialog').close();a.render();renderBooks();a.notify('تم حفظ الكتاب ✓');
 }
 function setup(){
