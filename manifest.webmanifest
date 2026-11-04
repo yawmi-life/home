@@ -31,5 +31,55 @@
       "id": "https://yawmi-life.github.io/home/index.html"
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "مياه اليوم",
+      "short_name": "المياه",
+      "description": "افتح بطاقة المياه لتسجيل شربك",
+      "url": "./01_ATLAS_Executive.html?quick=water",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "ورد القرآن",
+      "short_name": "القرآن",
+      "description": "سجل صفحات القرآن",
+      "url": "./01_ATLAS_Executive.html?quick=quran",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "مهام اليوم",
+      "short_name": "مهامي",
+      "description": "افتح مهام اليوم",
+      "url": "./01_ATLAS_Executive.html?quick=tasks",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "جلسة تركيز",
+      "short_name": "التركيز",
+      "description": "ابدأ مؤقت التركيز",
+      "url": "./01_ATLAS_Executive.html?quick=focus",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
 }
