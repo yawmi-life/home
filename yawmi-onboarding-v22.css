@@ -1,0 +1,19 @@
+/* YAWMI V22 — confirmation notice and install CTA, pre-login. */
+#yAuthForm[hidden],#yAuthTabs[hidden],#ymVerification[hidden],#ymAuthInstallHelp[hidden],#yLandingInstallHelp[hidden]{display:none!important}
+.y-auth-box .ym-verify-card{border:1px solid #d8caee;background:linear-gradient(155deg,#f4efff,#fcfbff);border-radius:18px;padding:17px;margin:14px 0;color:#292342;box-shadow:0 9px 28px rgba(89,71,152,.07)}
+.ym-verify-icon{height:50px;width:50px;border-radius:15px;display:grid;place-items:center;background:#e3d7ff;color:#5d43b5;font-size:27px;margin-bottom:10px}
+.ym-verify-card h3{font-size:20px;font-weight:900;margin:0 0 8px;color:#31244d;line-height:1.55}
+.ym-verify-card p{font-size:12px;color:#59546c;line-height:1.9;margin:8px 0}
+.ym-verify-address{padding:8px 10px;border-radius:8px;background:#fff;border:1px solid #e4dbf3;font-size:12px;font-weight:800;overflow-wrap:anywhere;text-align:center;direction:ltr;color:#4c3b76}
+.ym-verify-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:15px 0 9px}
+.ym-verify-actions button,.ym-verify-actions a{display:flex;align-items:center;justify-content:center;min-height:42px;text-align:center;border-radius:11px;padding:9px 6px;font:800 12px Cairo,Tahoma,sans-serif;cursor:pointer;text-decoration:none;line-height:1.6;box-sizing:border-box}
+.ym-verify-gmail{background:#7661d5;color:#fff!important}
+.ym-verify-resend{background:#fff;color:#624aa8;border:1px solid #cbbce9}
+.ym-verify-resend:disabled{opacity:.58;cursor:wait}
+.ym-verify-back{background:transparent;border:0;color:#58449c;padding:8px;font:800 12px Cairo,Tahoma,sans-serif}
+.ym-verify-feedback{font-size:11px;color:#54705f;min-height:0;line-height:1.8}
+.ym-auth-install-box{margin-top:15px;padding-top:14px;border-top:1px solid #e9e4f2;text-align:center}
+.ym-auth-install-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;padding:11px;border-radius:12px;border:1px solid #cfc3f4;background:#f1edff;color:#533c9d;font:900 13px Cairo,Tahoma,sans-serif;cursor:pointer}
+.ym-auth-install-box .ym-install-subtitle{font-size:11px;color:#72778a;margin:7px 0 0;line-height:1.8}
+.ym-install-help{background:#f1f5ff;color:#4e5878;padding:10px;border-radius:10px;margin-top:10px;font-size:12px;line-height:1.8}
+@media(max-width:440px){.ym-verify-actions{grid-template-columns:1fr}.y-auth-box .ym-verify-card{padding:14px}.ym-verify-card h3{font-size:18px}}
