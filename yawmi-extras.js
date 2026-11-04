@@ -20,7 +20,7 @@ const open=()=>{const name=String(api()?.getState()?.profile?.name||'المست�
 $('yawmiMenuBtn').addEventListener('click',open);$('ymClose').addEventListener('click',close);shade.addEventListener('click',close);document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!side.hidden)close()});
 $('ymSkin').addEventListener('change',ev=>{close();const s=$('skinSwitch');s.value=ev.target.value;s.dispatchEvent(new Event('change',{bubbles:true}))});
 side.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.yamMode){api().getState().theme.mode=b.dataset.yamMode;api().applyTheme();api().save();document.querySelectorAll('[data-yam-mode]').forEach(x=>x.classList.toggle('is-selected',x===b));return}
-const action=b.dataset.yamAction;if(!action)return;if(action==='install'){const ib=$('installBtn');if(ib&&!ib.hidden){close();ib.click()}else $('ymInstallHelp').hidden=!$('ymInstallHelp').hidden;return}close();if(action==='account')$('yawmiAccountBtn').click();if(action==='settings')api().openSettings();if(action==='books')api().goBooks();if(action==='quran')api().goQuran();if(action==='goals')api().goGoals();if(action==='home')api().goHome()});
+const action=b.dataset.yamAction;if(!action)return;if(action==='install'){if(window.YawmiInstall?.install)window.YawmiInstall.install('ymInstallHelp');else $('ymInstallHelp').hidden=!$('ymInstallHelp').hidden;return}close();if(action==='account')$('yawmiAccountBtn').click();if(action==='settings')api().openSettings();if(action==='books')api().goBooks();if(action==='quran')api().goQuran();if(action==='goals')api().goGoals();if(action==='home')api().goHome()});
 }
 function renderBooks(){
 if(!api()||!$('ymBooksGrid'))return;
