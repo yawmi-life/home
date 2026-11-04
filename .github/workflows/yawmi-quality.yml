@@ -18,7 +18,7 @@ jobs:
       - name: Static syntax and offline merge tests
         run: |
           node --test tests/*.test.cjs
-          for f in cloud.js yawmi-offline-v1.js yawmi-seasons-v1.js yawmi-habit-insights-v30.js yawmi-friend-challenges-v30.js yawmi-extras.js yawmi-book-discovery-v31.js yawmi-money-v32.js yawmi-diary-v32.js sw.js; do node --check "$f"; done
+          for f in cloud.js yawmi-offline-v1.js yawmi-seasons-v1.js yawmi-habit-insights-v30.js yawmi-friend-challenges-v30.js yawmi-extras.js yawmi-book-discovery-v31.js yawmi-money-v32.js yawmi-diary-v32.js yawmi-life-core-v33.js yawmi-life-growth-v33.js yawmi-life-privacy-v33.js sw.js; do node --check "$f"; done
   browser:
     needs: unit
     runs-on: ubuntu-latest
