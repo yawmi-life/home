@@ -1,43 +1,53 @@
-/* YAWMI V22 — PWA install available before authentication and on the landing page. */
+/* YAWMI V23 — show installation UI only when installation is not confirmed. */
 (()=>{'use strict';
-let deferredPrompt=null;
-const standalone=()=>Boolean(window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true);
+let deferredPrompt=null,installedThisVisit=false,relatedInstalled=false,checkInFlight=null;
+const standalone=()=>Boolean(window.matchMedia?.('(display-mode: standalone)').matches||window.matchMedia?.('(display-mode: fullscreen)').matches||navigator.standalone===true);
+const installed=()=>standalone()||installedThisVisit||relatedInstalled;
+const setVisible=(id,show)=>{const el=document.getElementById(id);if(!el)return;el.hidden=!show;};
 const platformHelp=()=>{
- if(standalone())return 'التطبيق مثبت بالفعل. افتح «يومي» من شاشة التطبيقات.';
  const ua=navigator.userAgent||'';
- if(/iPad|iPhone|iPod/i.test(ua))return 'على iPhone: افتح القائمة «مشاركة» من Safari أو متصفحك، ثم اختر «إضافة إلى الشاشة الرئيسية» وأكّد «إضافة».';
- if(/Android/i.test(ua))return 'على أندرويد: افتح رابط يومي في Chrome ثم ⋮ واختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».';
- return 'من Chrome أو Edge على الكمبيوتر: استخدم زر «تثبيت التطبيق» في شريط العنوان أو من قائمة المتصفح. ويمكنك تثبيته من هاتفك أيضًا.';
+ if(/iPad|iPhone|iPod/i.test(ua))return 'على iPhone: افتح قائمة مشاركة المتصفح، ثم اختر «إضافة إلى الشاشة الرئيسية» وأكد الإضافة.';
+ if(/Android/i.test(ua))return 'على أندرويد: افتح يومي في Chrome، ثم ⋮ ثم «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».';
+ return 'في Chrome أو Edge على الكمبيوتر، اختر «تثبيت» من شريط العنوان أو قائمة المتصفح.';
 };
-function hint(id,message){
- const el=typeof id==='string'?document.getElementById(id):id;
- if(el){el.textContent=message;el.hidden=false;}
+function refresh(){
+ const show=!installed();
+ setVisible('ymAuthInstallBox',show);
+ setVisible('ymAuthInstall',show);
+ setVisible('ymAuthInstallHelp',show&&!!document.getElementById('ymAuthInstallHelp')?.textContent);
+ setVisible('yLandingInstallBox',show);
+ setVisible('yLandingInstall',show);
+ setVisible('yLandingInstallHelp',show&&!!document.getElementById('yLandingInstallHelp')?.textContent);
+ document.querySelectorAll('[data-yam-action="install"]').forEach(el=>el.hidden=!show);
+ setVisible('installBtn',show&&!!deferredPrompt);
 }
-function sync(){
- const installed=standalone();
- for(const id of ['ymAuthInstall','yLandingInstall']){
-   const b=document.getElementById(id);if(b){b.textContent=installed?'✓ تطبيق يومي مثبت بالفعل':'📲 تثبيت تطبيق يومي';b.setAttribute('aria-label',installed?'التطبيق مثبت بالفعل':'تثبيت تطبيق يومي على الجهاز');}
- }
+async function checkInstalled(){
+ if(installed())return refresh();
+ if(typeof navigator.getInstalledRelatedApps!=='function')return refresh();
+ if(checkInFlight)return checkInFlight;
+ checkInFlight=Promise.resolve().then(()=>navigator.getInstalledRelatedApps()).then(apps=>{
+   relatedInstalled=Array.isArray(apps)&&apps.some(app=>app.platform==='webapp'&&(String(app.url||'').includes('/home/manifest.webmanifest')||String(app.id||'').includes('/home/index.html')||!app.url));
+ }).catch(()=>{}).finally(()=>{checkInFlight=null;refresh();});
+ return checkInFlight;
 }
+function hint(id,text){const el=document.getElementById(id);if(el){el.textContent=text;el.hidden=false;}}
 function install(helpId){
- if(standalone()){hint(helpId,platformHelp());return;}
- const prompt=deferredPrompt;
- if(prompt){
-  deferredPrompt=null;
+ if(installed())return refresh();
+ if(deferredPrompt){
+  const prompt=deferredPrompt;deferredPrompt=null;
   try{
-   // Important: call .prompt() synchronously inside the click gesture.
-   const pending=prompt.prompt();
-   Promise.resolve(pending).then(()=>prompt.userChoice).then(choice=>{
-    if(choice?.outcome==='accepted')hint(helpId,'تم قبول طلب التثبيت. أكمل خطوات المتصفح.');
-    else hint(helpId,'يمكنك تثبيت يومي في أي وقت من قائمة المتصفح.');
-   }).catch(()=>hint(helpId,platformHelp())).finally(sync);
+   const result=prompt.prompt();Promise.resolve(result).then(()=>prompt.userChoice).then(choice=>{
+    if(choice?.outcome==='accepted')hint(helpId,'تم قبول طلب التثبيت. ستجد التطبيق في شاشة التطبيقات بعد اكتمال التثبيت.');
+    else hint(helpId,platformHelp());
+  }).catch(()=>hint(helpId,platformHelp())).finally(()=>{refresh();checkInstalled()});
   }catch(_){hint(helpId,platformHelp());}
-  return;
- }
- hint(helpId,platformHelp());
+ }else hint(helpId,platformHelp());
 }
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;sync();});
-window.addEventListener('appinstalled',()=>{deferredPrompt=null;sync();hint('ymAuthInstallHelp','تم تثبيت التطبيق بنجاح ✓');hint('yLandingInstallHelp','تم تثبيت التطبيق بنجاح ✓');});
-window.YawmiInstall={install,standalone,sync};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sync);else sync();
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;checkInstalled();refresh();});
+window.addEventListener('appinstalled',()=>{installedThisVisit=true;deferredPrompt=null;refresh();});
+window.addEventListener('pageshow',()=>checkInstalled());
+try{window.matchMedia?.('(display-mode: standalone)').addEventListener?.('change',()=>checkInstalled())}catch(_){}
+window.YawmiInstall={install,standalone,installed,refresh,checkInstalled,sync:refresh};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{refresh();checkInstalled()});
+else{refresh();checkInstalled()}
 })();

@@ -17,3 +17,6 @@
 .ym-auth-install-box .ym-install-subtitle{font-size:11px;color:#72778a;margin:7px 0 0;line-height:1.8}
 .ym-install-help{background:#f1f5ff;color:#4e5878;padding:10px;border-radius:10px;margin-top:10px;font-size:12px;line-height:1.8}
 @media(max-width:440px){.ym-verify-actions{grid-template-columns:1fr}.y-auth-box .ym-verify-card{padding:14px}.ym-verify-card h3{font-size:18px}}
+
+/* Hide install prompts for verified installed users without leaking empty UI. */
+#ymAuthInstallBox[hidden],#ymAuthInstall[hidden],#yLandingInstallBox[hidden],#yLandingInstall[hidden],#installBtn[hidden],.ym-menu-link[hidden]{display:none!important}
