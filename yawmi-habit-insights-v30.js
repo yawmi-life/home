@@ -31,7 +31,7 @@ function render(){
  if(!hs.some(h=>h.id===chosen))chosen=hs[0].id;
  const h=hs.find(x=>x.id===chosen),a=calculate(h,s,today());
  const tip=a.strength>=85?'ثبات ممتاز':a.strength>=55?'عادتك بتتقوّى':a.strength>=25?'في طريقك للثبات':'خطوات صغيرة تصنع عادة ثابتة';
- const heat=a.days.slice(-30).map((d,i)=>'<span class="ym-habit-day '+(a.status[i+60]?'done':'')+'" title="'+esc(d)+' '+(a.status[i+60]?'✓':'—')+'" aria-label="'+esc(d)+(a.status[i+60]?' مكتمل':' غير مكتمل')+'"></span>').join('');
+ const heat=a.days.slice(-30).map((d,i)=>'<span role="img" class="ym-habit-day '+(a.status[i+60]?'done':'')+'" title="'+esc(d)+' '+(a.status[i+60]?'✓':'—')+'" aria-label="'+esc(d)+(a.status[i+60]?' مكتمل':' غير مكتمل')+'"></span>').join('');
  box.innerHTML='<div class="ym-habit-insights-heading"><div><h3>📈 قوة العادة</h3><p class="muted mini">تحليل آخر 90 يومًا، ونتائج آخر 30 يومًا. عدم الالتزام بيقلّل القوة تدريجيًا، مش بيصفرها.</p></div>'
  +'<select id="ymHabitInsightPick" aria-label="اختيار العادة">'+hs.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===chosen?'selected':'')+'>'+esc(x.icon||'✦')+' '+esc(x.title)+'</option>').join('')+'</select></div>'
  +'<div class="ym-habit-insight-grid"><div><small>قوة العادة</small><b>'+a.strength+'%</b><span>'+tip+'</span></div>'
