@@ -1,0 +1,173 @@
+const {test,expect}=require('@playwright/test');
+const AxeBuilder=require('@axe-core/playwright').default;
+async function boot(page){await page.goto('/tests/life-v33.html');await expect(page.locator('#ymLifeCalendar h2')).toContainText('كل يومك');}
+const getDate=page=>page.evaluate(()=>window.YawmiExtraAPI.today());
+test('calendar merges source tasks and habits with manually created appointment and edits it',async({page})=>{
+ await boot(page);
+ await page.evaluate(()=>{window.__appState.tasks=[{id:'t',title:'مهمة ذات موعد',repeat:'daily',date:'2026-01-01',time:'08:30'}];
+ window.__appState.habits=[{id:'h',title:'قراءة',repeat:'daily',target:10}];
+ window.__appState.finance.recurring=[{id:'rent',title:'إيجار الشهر',day:5}];window.YawmiLife.render('calendar')});
+ await expect(page.locator('#ymLifeCalendar')).toContainText('مهمة ذات موعد');
+ await expect(page.locator('#ymLifeCalendar')).toContainText('العادات (0/1)');
+ await expect(page.locator('#ymLifeCalendar')).toContainText('إيجار الشهر');
+ await page.locator('#ymLifeCalendar [data-life-event-new]').first().click();
+ await page.locator('#ylEventTitle').fill('زيارة مهمة');
+ await page.locator('#ylEventTime').fill('13:30');
+ await page.locator('#ylEventEnd').fill('14:00');
+ await page.locator('#ylEventType').selectOption('appointment');
+ await page.locator('#ylEventRemind').selectOption('10');
+ await page.locator('#ylEventForm button[type=submit]').click();
+ await expect(page.locator('#ymLifeDialog')).not.toBeVisible();
+ const saved=await page.evaluate(()=>({e:window.__appState.lifeCalendar[0],daily:window.__appState.daily,xp:window.YawmiExtraAPI.getScores().xp}));
+ expect(saved.e).toMatchObject({title:'زيارة مهمة',time:'13:30',type:'appointment',remind:'10'});
+ expect(saved.daily).toEqual({});expect(saved.xp).toBe(400);
+ await page.locator('[data-life-event-edit]').click();
+ await page.locator('#ylEventTitle').fill('زيارة معدّلة');
+ await page.locator('#ylEventForm button[type=submit]').click();
+ await expect(page.locator('#ymLifeCalendar')).toContainText('زيارة معدّلة');
+});
+test('reminder is saved as one-time or yearly and persists without requesting notifications',async({page})=>{
+ await boot(page);
+ await page.locator('#ymLifeReminders [data-life-rem-new]').first().click();
+ await page.locator('#ylRemTitle').fill('تجديد اشتراك');
+ await page.locator('#ylRemTime').fill('08:15');
+ await page.locator('#ylRemRepeat').selectOption('yearly');
+ await page.locator('#ylReminderForm button[type=submit]').click();
+ const saved=await page.evaluate(()=>window.__appState.lifeReminders);
+ expect(saved).toHaveLength(1);expect(saved[0]).toMatchObject({title:'تجديد اشتراك',time:'08:15',repeat:'yearly'});
+ expect(await page.evaluate(()=>window.__appState.lifeNotificationPrefs.enabled)).toBe(false);
+ await page.reload();expect(await page.evaluate(()=>window.__appState.lifeReminders.length)).toBe(1);
+});
+test('quick notes search, favorite and conversion never auto-complete tasks or goals',async({page})=>{
+ await boot(page);
+ await page.locator('#ymLifeNotes [data-life-note-new]').click();
+ await page.locator('#ylNoteTitle').fill('فكرة لتعلّم البرمجة');
+ await page.locator('#ylNoteBody').fill('اتعلم أساسيات بايثون هذا الشهر');
+ await page.locator('#ylNoteTags').fill('تعلم، مشروع، تعلم');
+ await page.locator('#ylNoteForm button[type=submit]').click();
+ await expect(page.locator('.yl-note')).toHaveCount(1);
+ await page.locator('#ylNoteSearch').fill('بايثون');
+ await expect(page.locator('.yl-note')).toHaveCount(1);
+ await page.locator('#ylNoteSearch').fill('غير موجود');
+ await expect(page.locator('.yl-note')).toHaveCount(0);
+ await page.locator('#ylNoteSearch').fill('');
+ page.once('dialog',d=>d.accept());
+ await page.locator('[data-life-note-to-task]').click();
+ let items=await page.evaluate(()=>({tasks:window.__appState.tasks,goals:window.__appState.goals,notes:window.__appState.lifeNotes,daily:window.__appState.daily}));
+ expect(items.tasks).toHaveLength(1);
+ expect(items.tasks[0].title).toBe('فكرة لتعلّم البرمجة');
+ expect(items.daily).toEqual({});
+ page.once('dialog',d=>d.accept());
+ await page.locator('[data-life-note-to-goal]').click();
+ items=await page.evaluate(()=>({tasks:window.__appState.tasks,goals:window.__appState.goals}));
+ expect(items.goals).toHaveLength(1);expect(items.goals[0].progress).toBe(0);
+ await page.locator('[data-life-note-to-task]').click();
+ expect(await page.evaluate(()=>window.__appState.tasks.length)).toBe(1);
+});
+test('health records sleep, steps, exercise and energy without XP and survives reload',async({page})=>{
+ await boot(page);
+ await page.locator('#ymLifeHealth [data-life-health-edit]').first().click();
+ await page.locator('#ylHealthSteps').fill('7600');
+ await page.locator('#ylHealthExercise').fill('30');
+ await page.locator('#ylHealthSleep').fill('7.5');
+ await page.locator('#ylHealthWeight').fill('69.5');
+ await page.locator('#ylHealthEnergy').selectOption('4');
+ await page.locator('#ylHealthForm button[type=submit]').click();
+ let saved=await page.evaluate(()=>({h:window.__appState.lifeHealth[0],scores:window.YawmiExtraAPI.getScores()}));
+ expect(saved.h).toMatchObject({sleepMin:450,steps:7600,exerciseMin:30,weightKg:69.5,energy:4});expect(saved.scores.xp).toBe(400);
+ await expect(page.locator('#ymLifeHealth')).toContainText('7600');
+ await page.reload();expect(await page.evaluate(()=>window.__appState.lifeHealth.length)).toBe(1);
+});
+test('routine steps linked to existing habits do not count extra habit completion or XP',async({page})=>{
+ await boot(page);
+ await page.locator('[data-life-routine-template="morning"]').click();
+ await expect(page.locator('.yl-routine')).toHaveCount(1);
+ await page.locator('[data-life-routine-check]').first().check();
+ let status=await page.evaluate(()=>({daily:window.__appState.daily,checks:window.__appState.lifeRoutineChecks,xp:window.YawmiExtraAPI.getScores().xp}));
+ expect(status.daily).toEqual({});expect(status.checks[0].done).toHaveLength(1);expect(status.xp).toBe(400);
+ await page.evaluate(()=>{window.__appState.habits.push({id:'reading',title:'قراءة كتاب',target:10,repeat:'daily'});window.YawmiLife.render('routines')});
+ await page.locator('[data-life-routine-new]').click();
+ await page.locator('#ylRoutineTitle').fill('روتين مذاكرة');
+ await page.locator('#ylRoutineSteps').fill('قراءة الدرس\nحل تمرين');
+ await page.locator('[data-life-routine-habit="reading"]').check();
+ await page.locator('#ylRoutineForm button[type=submit]').click();
+ const r=await page.evaluate(()=>window.__appState.lifeRoutines.find(x=>x.title==='روتين مذاكرة'));
+ expect(r.steps).toHaveLength(3);expect(r.steps.some(x=>x.habitId==='reading')).toBe(true);
+ expect(await page.evaluate(()=>window.__appState.daily)).toEqual({});
+});
+test('yearly vision and 90-day plan link an existing goal without changing its progress',async({page})=>{
+ await boot(page);
+ await page.evaluate(()=>{window.__appState.goals=[{id:'native',title:'كورس بايثون',progress:2,target:10,unit:'درس'}];window.YawmiLife.render('planning')});
+ await page.locator('[data-life-year-new]').click();
+ await page.locator('#ylYearTitle').fill('تطوير مهارة البرمجة');
+ await page.locator('#ylYearGoal').selectOption('native');
+ await page.locator('#ylYearForm button[type=submit]').click();
+ await expect(page.locator('#ymLifePlanning')).toContainText('تطوير مهارة البرمجة');
+ await page.locator('[data-life-plan-new]').first().click();
+ await page.locator('#ylPlanTitle').fill('خطة ربع سنوية');
+ await page.locator('#ylPlanGoal').selectOption('native');
+ await page.locator('#ylPlanMilestones').fill('إنهاء الوحدة الأولى\nتطبيق مشروع');
+ await page.locator('#ylPlanForm button[type=submit]').click();
+ await expect(page.locator('.yl-plan')).toHaveCount(1);
+ await page.locator('[data-life-plan-check]').first().check();
+ const result=await page.evaluate(()=>({plan:window.__appState.lifePlans[0],goal:window.__appState.goals[0],xp:window.YawmiExtraAPI.getScores().xp}));
+ expect(result.plan.milestones.filter(x=>x.done)).toHaveLength(1);
+ expect(result.goal.progress).toBe(2);expect(result.xp).toBe(400);
+ const span=await page.evaluate(()=>{
+  const p=window.__appState.lifePlans[0];
+  return Math.round((new Date(p.end+'T12:00:00')-new Date(p.start+'T12:00:00'))/86400000)});
+ expect(span).toBe(89);
+});
+test('private local coach provides explainable recommendations, adds task only on explicit confirmation',async({page})=>{
+ await boot(page);
+ await expect(page.locator('#ymLifeCoach')).toContainText('بدون إرسال بياناتك');
+ await expect(page.locator('.yl-coach-card')).not.toHaveCount(0);
+ const before=await page.evaluate(()=>window.__appState.tasks.length);expect(before).toBe(0);
+ page.once('dialog',d=>d.accept());
+ await page.locator('[data-life-coach-task]').first().click();
+ const result=await page.evaluate(()=>({t:window.__appState.tasks,xp:window.YawmiExtraAPI.getScores().xp}));
+ expect(result.t).toHaveLength(1);expect(result.t[0].repeat).toBe('once');expect(result.xp).toBe(400);
+});
+test('privacy opt-in PBKDF2 PIN gates financial and journal views, does not store raw PIN',async({page})=>{
+ await boot(page);
+ await page.locator('[data-life-set-pin]').click();
+ await page.locator('#ylNewPin').fill('468751');
+ await page.locator('#ylConfirmPin').fill('468751');
+ await page.locator('#ylPinForm button[type=submit]').click();
+ await expect(page.locator('#ymLifeDialog')).not.toBeVisible();
+ const stored=await page.evaluate(()=>window.__appState.lifePrivacy);
+ expect(stored.pinHash).toMatch(/^[0-9a-f]{64}$/);
+ expect(stored.lockMoney).toBe(true);expect(stored.lockDiary).toBe(true);
+ expect(JSON.stringify(stored)).not.toContain('468751');
+ await page.locator('[data-life-lock-now]').click();
+ let locked=await page.evaluate(()=>({money:window.YawmiLife.privacyGate('money'),diary:window.YawmiLife.privacyGate('diary')}));
+ expect(locked).toEqual({money:false,diary:false});
+ await expect(page.locator('#ymMoneyApp .yl-pin-gate')).toHaveCount(1);
+ await page.locator('#ylPinGateInput').first().fill('111111');
+ await page.locator('#ylPinGateForm').first().getByRole('button',{name:'فتح القسم'}).click();
+ await expect(page.locator('#ylPinGateError').first()).toContainText('غير صحيح');
+ await page.locator('#ylPinGateInput').first().fill('468751');
+ await page.locator('#ylPinGateForm').first().getByRole('button',{name:'فتح القسم'}).click();
+ locked=await page.evaluate(()=>({money:window.YawmiLife.privacyGate('money'),diary:window.YawmiLife.privacyGate('diary')}));
+ expect(locked).toEqual({money:true,diary:true});
+ await page.reload();
+ expect(await page.evaluate(()=>window.YawmiLife.privacyGate('money'))).toBe(false);
+});
+test('new suite passes serious and critical WCAG checks in browser fixture',async({page})=>{
+ await boot(page);
+ const violations=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze()).violations.filter(x=>['serious','critical'].includes(x.impact));
+ expect(violations).toEqual([]);
+});
+test('three native themes keep home minimal and expose all new sections in the sidebar',async({page})=>{
+ const routes=['calendar','reminders','notes','health','routines','planning','coach','privacy'];
+ for(const path of ['01_ATLAS_Executive.html','02_JOURNAL_Editorial.html','03_QUEST_RPG.html']){
+  await page.goto('/'+path,{waitUntil:'domcontentloaded'});
+  for(const t of routes){
+   await expect(page.locator('#ymLife'+t[0].toUpperCase()+t.slice(1))).toHaveCount(1);
+   await expect(page.locator('.sidebar [data-tab="'+t+'"]')).toHaveCount(1);
+  }
+  await expect(page.locator('#page-home [data-tab="money"],#page-home [data-tab="diary"]')).toHaveCount(0);
+  await expect(page.locator('#page-home [data-tab="calendar"],#page-home [data-tab="notes"]')).toHaveCount(0);
+  expect(await page.evaluate(()=>Boolean(window.YawmiLife?.render&&window.YawmiLifePrivacy?.gate))).toBe(true);
+ }
+});
