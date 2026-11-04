@@ -1,0 +1,18 @@
+/* YAWMI V30 – light per-habit analytics */
+.ym-habit-insights{margin-top:16px;padding:18px;min-width:0}
+.ym-habit-insights-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.ym-habit-insights-heading h3{margin:0 0 5px;font-size:19px}
+.ym-habit-insights-heading p{margin:0 0 12px}
+#ymHabitInsightPick{max-width:100%;min-height:37px;padding:7px;border-radius:10px;border:1px solid var(--border);background:var(--panel2,var(--surface));color:var(--text)}
+.ym-habit-insight-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:13px 0}
+.ym-habit-insight-grid>div{background:var(--panel2,var(--surface));border:1px solid var(--border);border-radius:12px;padding:12px}
+.ym-habit-insight-grid small,.ym-habit-insight-grid span{display:block;color:var(--muted);font-size:11px}
+.ym-habit-insight-grid b{display:block;color:var(--text);font-size:22px;margin:3px 0}
+.ym-habit-strength-track{height:9px;border-radius:12px;overflow:hidden;background:var(--border);margin:10px 0}
+.ym-habit-strength-track i{display:block;height:100%;background:var(--accent);border-radius:12px}
+.ym-habit-trend{display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:12px;margin:12px 0}
+.ym-habit-trend strong{color:var(--accent)}
+.ym-habit-heat{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:5px;margin:12px 0}
+.ym-habit-day{height:18px;border-radius:4px;background:var(--panel2,var(--surface));border:1px solid var(--border)}
+.ym-habit-day.done{background:var(--accent);border-color:transparent}
+@media(max-width:720px){.ym-habit-insight-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-habit-heat{gap:3px}.ym-habit-day{height:14px}}
