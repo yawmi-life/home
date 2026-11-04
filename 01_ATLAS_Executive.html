@@ -280,7 +280,7 @@ function openSettings(){el('profileName').value=state.profile.name||'';let choos
  if(window.matchMedia){window.matchMedia('(prefers-color-scheme: light)').addEventListener?.('change',()=>{if(state.theme.mode==='auto')setTheme()})}
  el('installBtn').addEventListener('click',()=>window.YawmiInstall?.install('ymInstallHelp'));
  if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
- window.YawmiExtraAPI={getState:()=>state,getScores:allScores,save,render,uid,activity,notify:toast,today:currentDay,applyTheme:setTheme,goBooks:()=>{nav('books');window.YawmiExtras?.showAll()},goQuran:()=>nav('quran'),goGoals:()=>nav('goals'),goTasks:()=>nav('tasks'),addWaterMl:ml=>waterChange((Number(ml)||0)/(waterPrefs().mode==='liters'?1000:waterPrefs().cupMl)),goHome:()=>nav('home'),getSkills:()=>skills,rebuildSkills,openSettings};setTheme();nav('home');if(!fromDisk&&!window.YawmiCloud?.configured)save();
+ window.YawmiExtraAPI={getState:()=>state,getScores:allScores,save,render,uid,activity,notify:toast,today:currentDay,applyTheme:setTheme,goBooks:()=>{nav('books');window.YawmiExtras?.showAll()},goQuran:()=>nav('quran'),goGoals:()=>nav('goals'),goTasks:()=>nav('tasks'),addWaterMl:ml=>{if(selected!==currentDay()){selected=currentDay();render()}waterChange((Number(ml)||0)/(waterPrefs().mode==='liters'?1000:waterPrefs().cupMl))},goHome:()=>nav('home'),getSkills:()=>skills,rebuildSkills,openSettings};setTheme();nav('home');if(!fromDisk&&!window.YawmiCloud?.configured)save();
  window.YawmiCloud?.mount({
    getSnapshot:()=>structuredClone(state),
    replaceSnapshot:(remote, newUser=false)=>{
