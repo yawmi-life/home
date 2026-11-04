@@ -21,10 +21,10 @@ const ui=`<div id="yAuthWall" class="y-auth-wall" hidden><section class="y-auth-
  <button type="button" id="ymAuthInstall" class="ym-auth-install-btn">📲 تثبيت تطبيق يومي</button>
  <p class="ym-install-subtitle">يمكنك تثبيت يومي قبل التسجيل، ثم تسجيل الدخول من التطبيق.</p>
  <p id="ymAuthInstallHelp" class="ym-install-help" hidden role="status"></p>
-</div></section></div><div id="yAccountSheet" class="y-auth-sheet" hidden><section class="y-auth-box" role="dialog" aria-modal="true"><div style="display:flex;justify-content:space-between;gap:12px"><h2>👤 الحساب والمزامنة</h2><button class="y-auth-minor" id="yAccountClose">إغلاق ✕</button></div><div id="yAccountDetails" class="y-auth-account"></div><div id="yAccountError" class="y-auth-notice"></div><button id="yManualSync" class="y-auth-primary">مزامنة الآن</button><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><button id="yConflictExport" class="y-auth-minor">تصدير مسودة JSON</button><button id="yNotionCSV" class="y-auth-minor">CSV لاستيراده إلى Notion</button><button id="yReloadServer" class="y-auth-minor">تحميل من السحابة</button><button id="yBackupHistory" class="y-auth-minor">النسخ اليومية</button><button id="yLogout" class="y-auth-minor" style="color:#b33947">خروج</button></div><div id="yBackupPanel" style="margin-top:12px" hidden></div><p class="y-auth-desc" style="margin-top:15px">ربط Notion لكل مستخدم يحتاج OAuth آمن على الخادم. غير مفعّل في النسخة الحالية.</p></section></div>`;
-const Y={configured,currentUser:null,ready:false,loading:false,revision:0,conflict:false,adapter:null,sb:null,pending:null,working:false,timer:null,version:0,tab:'login',accountError:'',pendingVerificationEmail:'',resendCooldownUntil:0,
+</div></section></div><div id="yAccountSheet" class="y-auth-sheet" hidden><section class="y-auth-box" role="dialog" aria-modal="true"><div style="display:flex;justify-content:space-between;gap:12px"><h2>👤 الحساب والمزامنة</h2><button class="y-auth-minor" id="yAccountClose">إغلاق ✕</button></div><div id="yAccountDetails" class="y-auth-account"></div><div id="yAccountError" class="y-auth-notice"></div><div id="ymConflictResolver" class="ym-conflict-resolver" hidden></div><button id="yManualSync" class="y-auth-primary">مزامنة الآن</button><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><button id="yConflictExport" class="y-auth-minor">تصدير مسودة JSON</button><button id="yNotionCSV" class="y-auth-minor">CSV لاستيراده إلى Notion</button><button id="yReloadServer" class="y-auth-minor">تحميل من السحابة</button><button id="yBackupHistory" class="y-auth-minor">النسخ اليومية</button><button id="yLogout" class="y-auth-minor" style="color:#b33947">خروج</button></div><div id="yBackupPanel" style="margin-top:12px" hidden></div><p class="y-auth-desc" style="margin-top:15px">ربط Notion لكل مستخدم يحتاج OAuth آمن على الخادم. غير مفعّل في النسخة الحالية.</p></section></div>`;
+const Y={configured,currentUser:null,ready:false,loading:false,revision:0,conflict:false,adapter:null,sb:null,pending:null,working:false,timer:null,version:0,tab:'login',accountError:'',mergeContext:null,pendingVerificationEmail:'',resendCooldownUntil:0,
  mount(adapter){this.adapter=adapter;document.body.insertAdjacentHTML('beforeend',ui);this.wire();this.setTab('login');if(!configured){this.status('تجربة محلية');return;}this.gate(true);this.status('التحقق من الحساب');this.init()},
- wire(){$('ymAuthInstall').addEventListener('click',()=>window.YawmiInstall?.install('ymAuthInstallHelp'));$('ymVerificationLogin').addEventListener('click',()=>{const mail=this.pendingVerificationEmail;this.setTab('login');if(mail)$('yAuthEmail').value=mail;this.message('بعد الضغط على رابط التأكيد في بريدك، سجّل الدخول هنا.')});$('ymResendVerification').addEventListener('click',()=>this.resendVerification());$('ymShowPassword').addEventListener('click',()=>{const i=$('yAuthPassword'),b=$('ymShowPassword'),visible=i.type==='password';i.type=visible?'text':'password';b.setAttribute('aria-pressed',String(visible));b.setAttribute('aria-label',visible?'إخفاء كلمة المرور':'إظهار كلمة المرور');b.textContent=visible?'◉':'👁'});$('ymStaySigned').checked=localStorage.getItem('yawmi_keep_signed_in')!=='false';$('yawmiAccountBtn')?.addEventListener('click',()=>this.account(true));$('yAccountClose').addEventListener('click',()=>this.account(false));$('yAccountSheet').addEventListener('click',e=>{if(e.target===$('yAccountSheet'))this.account(false)});$('yAuthTabs').addEventListener('click',e=>{const b=e.target.closest('[data-auth-tab]');if(b)this.setTab(b.dataset.authTab)});$('yAuthForm').addEventListener('submit',e=>{e.preventDefault();this.submit()});$('yAuthForm').addEventListener('invalid',e=>{const id=e.target.id;this.message(id==='yAuthName'?'اكتب اسمك عند إنشاء الحساب.':id==='yAuthEmail'?'اكتب بريدًا إلكترونيًا صحيحًا.':'تحقق من كلمة المرور.',true)},true);$('yManualSync').addEventListener('click',async()=>{if(this.conflict)return;await this.flush();await this.refresh();this.updateAccount()});$('yConflictExport').addEventListener('click',()=>this.export());$('yNotionCSV').addEventListener('click',()=>this.exportNotionCSV());$('yReloadServer').addEventListener('click',()=>this.reload());$('yBackupHistory').addEventListener('click',()=>this.showBackups());$('yLogout').addEventListener('click',async()=>{if(this.pending&&!confirm('لديك تعديلات لم تُرفع. صدّر نسخة قبل الخروج. هل تستمر؟'))return;const oldUid=this.currentUser?.id;const {error}=await this.sb.auth.signOut();if(error)this.say(error.message);else{if(oldUid)await window.YawmiOffline?.clearUser(oldUid).catch(()=>{});this.signedOut()}this.account(false)})},
+ wire(){$('ymAuthInstall').addEventListener('click',()=>window.YawmiInstall?.install('ymAuthInstallHelp'));$('ymVerificationLogin').addEventListener('click',()=>{const mail=this.pendingVerificationEmail;this.setTab('login');if(mail)$('yAuthEmail').value=mail;this.message('بعد الضغط على رابط التأكيد في بريدك، سجّل الدخول هنا.')});$('ymResendVerification').addEventListener('click',()=>this.resendVerification());$('ymShowPassword').addEventListener('click',()=>{const i=$('yAuthPassword'),b=$('ymShowPassword'),visible=i.type==='password';i.type=visible?'text':'password';b.setAttribute('aria-pressed',String(visible));b.setAttribute('aria-label',visible?'إخفاء كلمة المرور':'إظهار كلمة المرور');b.textContent=visible?'◉':'👁'});$('ymStaySigned').checked=localStorage.getItem('yawmi_keep_signed_in')!=='false';$('yawmiAccountBtn')?.addEventListener('click',()=>this.account(true));$('yAccountClose').addEventListener('click',()=>this.account(false));$('yAccountSheet').addEventListener('click',e=>{if(e.target===$('yAccountSheet'))this.account(false)});$('yAuthTabs').addEventListener('click',e=>{const b=e.target.closest('[data-auth-tab]');if(b)this.setTab(b.dataset.authTab)});$('yAuthForm').addEventListener('submit',e=>{e.preventDefault();this.submit()});$('yAuthForm').addEventListener('invalid',e=>{const id=e.target.id;this.message(id==='yAuthName'?'اكتب اسمك عند إنشاء الحساب.':id==='yAuthEmail'?'اكتب بريدًا إلكترونيًا صحيحًا.':'تحقق من كلمة المرور.',true)},true);$('yManualSync').addEventListener('click',async()=>{if(this.conflict)return;await this.flush();await this.refresh();this.updateAccount()});$('yConflictExport').addEventListener('click',()=>this.export());$('yNotionCSV').addEventListener('click',()=>this.exportNotionCSV());$('yReloadServer').addEventListener('click',()=>this.reload());$('yBackupHistory').addEventListener('click',()=>this.showBackups());$('ymConflictResolver').addEventListener('click',e=>{if(e.target.closest('[data-ym-merge-confirm]'))this.acceptConflictResolution()});$('yLogout').addEventListener('click',async()=>{if(this.pending&&!confirm('لديك تعديلات لم تُرفع. صدّر نسخة قبل الخروج. هل تستمر؟'))return;const oldUid=this.currentUser?.id;const {error}=await this.sb.auth.signOut();if(error)this.say(error.message);else{if(oldUid)await window.YawmiOffline?.clearUser(oldUid).catch(()=>{});this.signedOut()}this.account(false)})},
  status(s,k){const mini=$('ymSyncMini');if(mini){const ok=k==='ok'||s==='محفوظ سحابيًا',bad=k==='bad'||s==='غير متزامن'||s==='تعارض';mini.dataset.status=bad?'bad':ok?'ok':'pending';mini.textContent=bad?'⚠ راجع الحفظ':ok?'☁ محفوظ':/جاري الحفظ/.test(s)?'◌ جاري الحفظ':'☁ '+String(s||'جاري التحقق').slice(0,15);if(ok){this.lastSyncedAt=new Date().toISOString();}mini.title=(ok?'آخر مزامنة ناجحة: '+new Date(this.lastSyncedAt).toLocaleString('ar-EG'):s)}const el=$('yawmiCloudState');if(el){el.className='y-cloud-state '+(k||'');el.innerHTML='<i class="dot"></i> '+esc(s)}if($('yawmiAccountBtn'))$('yawmiAccountBtn').textContent=this.currentUser?'👤 '+(this.adapter?.getSnapshot()?.profile?.name&&this.adapter.getSnapshot().profile.name!=='المستكشف'?this.adapter.getSnapshot().profile.name:(this.currentUser.user_metadata?.display_name||'حسابي')):'👤 حسابي'},
  say(m){this.adapter?.notify?.(m)},gate(v){$('yAuthWall').hidden=!v},account(v){if(v){this.updateAccount();$('yAccountSheet').hidden=false}else{$('yAccountSheet').hidden=true;$('yBackupPanel').hidden=true}},message(s,bad=false){$('yAuthMessage').textContent=s;$('yAuthMessage').classList.toggle('error',bad)},
  setTab(t){this.tab=t;$('ymVerification').hidden=true;$('yAuthForm').hidden=false;$('yAuthTabs').hidden=t==='recovery';document.querySelectorAll('[data-auth-tab]').forEach(b=>b.classList.toggle('active',b.dataset.authTab===t));$('yAuthTabs').hidden=t==='recovery';$('yAuthName').hidden=t!=='signup';$('yAuthName').required=t==='signup';$('yAuthPassword').hidden=t==='forgot';$('yAuthPassword').required=t!=='forgot';$('yAuthPassword').closest('.ym-password-wrap').hidden=t==='forgot';$('yAuthPassword').autocomplete=t==='signup'?'new-password':'current-password';$('yAuthEmail').hidden=t==='recovery';$('yAuthEmail').required=t!=='recovery';$('ymStayWrap').hidden=!['login','signup'].includes(t);$('yAuthSubmit').textContent=({login:'تسجيل الدخول',signup:'إنشاء حساب',forgot:'إرسال رابط الاستعادة',recovery:'تعيين كلمة المرور'})[t];this.message('استخدم إيميلك الشخصي؛ كل حساب له سجلاته الخاصة.')},
@@ -60,7 +60,7 @@ const Y={configured,currentUser:null,ready:false,loading:false,revision:0,confli
  },
  async loadUser(user){
  if(!user||this.loading||this.ready&&this.currentUser?.id===user.id)return;
- this.loading=true;this.currentUser=user;this.ready=false;this.revision=0;this.pending=null;this.conflict=false;this.accountError='';this.status('تحميل سجلاتك…');
+ this.loading=true;this.currentUser=user;this.ready=false;this.revision=0;this.pending=null;this.conflict=false;this.mergeContext=null;this.accountError='';this.status('تحميل سجلاتك…');
  try{
   const {data,error}=await this.sb.from('yawmi_documents').select('data,revision').eq('user_id',user.id).maybeSingle();
   if(error)throw error;let doc=data;
@@ -83,11 +83,12 @@ const Y={configured,currentUser:null,ready:false,loading:false,revision:0,confli
     this.status('تم دمج التعديلات بين الجهازين');
    }else{
     this.adapter.replaceSnapshot(draft.data);this.pending=draft.data;this.conflict=true;
+    this.mergeContext={base:base.data,local:draft.data,remote:doc.data,remoteRevision:Number(doc.revision)};
     this.accountError='تغييرات متعارضة لم ندمجها حفاظًا على بياناتك: '+m.conflicts.slice(0,3).join('، ')+'. صدّر مسودتك قبل الاسترجاع.';
    }
   }else{
    this.adapter.replaceSnapshot(doc.data);
-   if(draft?.data){this.conflict=true;this.pending=draft.data;this.accountError='توجد مسودة لا نملك نسخة الأساس الخاصة بها؛ صدّرها أولًا قبل الاسترجاع.';}
+   if(draft?.data){this.conflict=true;this.pending=draft.data;this.mergeContext={base:null,local:draft.data,remote:doc.data,remoteRevision:Number(doc.revision)};this.accountError='توجد مسودة لا نملك نسخة الأساس الخاصة بها؛ صدّرها أولًا قبل الاسترجاع.';}
   }
   this.cache(user.id,doc.data,doc.revision);
   this.ready=true;this.gate(false);
@@ -138,17 +139,18 @@ const Y={configured,currentUser:null,ready:false,loading:false,revision:0,confli
       this.status('تم دمج آخر التحديثات؛ جاري الحفظ');
       return;
      }
+     this.mergeContext={base:base.data,local:this.pending||snap,remote:latest.data.data,remoteRevision:Number(latest.data.revision)};
      this.accountError='تعارض في '+merge.conflicts.slice(0,4).join('، ')+'. لم نكتب فوق بيانات أي جهاز. صدّر مسودتك أولًا.';
-    }else this.accountError='تعديل من جهاز آخر أحدث نسخة جديدة، ولا تتوفر قاعدة دمج محلية. صدّر مسودتك قبل الاسترجاع.';
+    }else{if(!latest.error)this.mergeContext={base:null,local:this.pending||snap,remote:latest.data.data,remoteRevision:Number(latest.data.revision)};this.accountError='تعديل من جهاز آخر أحدث نسخة جديدة، ولا تتوفر قاعدة دمج محلية. صدّر مسودتك قبل الاسترجاع.';}
     this.conflict=true;this.status('تعارض','bad');this.updateAccount();return;
    }
    throw error;
   }
   this.revision=Number(data);
   if(this.version===seq){
-   this.pending=null;this.clear(uid);this.status('محفوظ سحابيًا','ok');
+   this.pending=null;this.mergeContext=null;this.clear(uid);this.status('محفوظ سحابيًا','ok');
    this.cache(uid,snap,this.revision);
-   window.YawmiSeasons?.refresh(true);
+   window.YawmiSeasons?.refresh(true);window.YawmiChallenges?.refresh(true);
   }else{
    // A newer edit arrived during upload. Its base must be the newly acknowledged revision.
    this.cache(uid,snap,this.revision);
@@ -173,10 +175,19 @@ const Y={configured,currentUser:null,ready:false,loading:false,revision:0,confli
  async restoreBackup(day){
  if(!this.currentUser||!this.ready)return;
  if(this.pending||this.conflict||this.working){this.accountError='عندك تغييرات محلية غير متزامنة أو تعارض. احفظ/صدّر مسودتك أولًا ثم أعد المحاولة.';this.updateAccount();return;}
- if(!confirm('استعادة نسخة '+day+'؟ سيتم تسجيلها كإصدار جديد، وستحتفظ بنسخة اليوم السابقة تلقائيًا.'))return;
  const uid=this.currentUser.id;
  try{
  const {data:backup,error}=await this.sb.from('yawmi_daily_backups').select('data,revision').eq('user_id',uid).eq('backup_day',day).single();if(error)throw error;
+ const existing=this.adapter?.getSnapshot()||{};
+ const overview=x=>[
+  'المهام: '+(x.tasks||[]).length,
+  'العادات: '+(x.habits||[]).length,
+  'أيام مسجلة: '+Object.keys(x.daily||{}).length,
+  'الكتب: '+(x.books||[]).length,
+  'الأهداف: '+(x.goals||[]).length
+ ].join(' · ');
+ const confirmText='معاينة الاستعادة '+day+'\n\nنسختك الآن:\n'+overview(existing)+'\n\nالنسخة المحفوظة:\n'+overview(backup.data)+'\n\nلن نمسح إنجازاتك إلا إذا أكدت الاستعادة. النتيجة تُحفظ كإصدار جديد. هل تستمر؟';
+ if(!confirm(confirmText))return;
  const {data:rev,error:writeError}=await this.sb.rpc('yawmi_write',{p_data:backup.data,p_expected_revision:this.revision});
  if(writeError)throw writeError;
  this.revision=Number(rev);this.loading=true;try{this.adapter.replaceSnapshot(backup.data)}finally{this.loading=false}
@@ -185,7 +196,64 @@ const Y={configured,currentUser:null,ready:false,loading:false,revision:0,confli
  },
  exportNotionCSV(){const s=this.adapter?.getSnapshot();if(!s)return;const csvField=x=>'"'+String(x??'').replace(/"/g,'""')+'"';const rows=[['Date','Completed tasks','Completed habits','Water cups','Mood','Notes']];for(const [day,rec] of Object.entries(s.daily||{}).sort(([a],[b])=>a.localeCompare(b))){const tasks=(s.tasks||[]).filter(t=>rec.tasks?.[t.id]).map(t=>t.title).join(' | ');const habits=(s.habits||[]).filter(h=>Number(rec.habits?.[h.id]||0)>=Number(h.target||1)).map(h=>h.title).join(' | ');rows.push([day,tasks,habits,rec.water||0,rec.mood||'',rec.note||''])}const txt='\ufeff'+rows.map(row=>row.map(csvField).join(',')).join('\r\n');const u=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download='YAWMI_NOTION_IMPORT_'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),2500);this.say('CSV جاهز للاستيراد اليدوي إلى Notion — ليس مزامنة تلقائية')},
  export(){const v=this.pending||this.draft(this.currentUser?.id)?.data||this.adapter?.getSnapshot();if(!v)return;const url=URL.createObjectURL(new Blob([JSON.stringify({...v,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='YAWMI_DRAFT_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)},
- updateAccount(){if(!configured)this.accountError='هذه نسخة تجريبية محلية. لتفعيل إيميلات حقيقية، ضع إعدادات Supabase في config.js وارفع الملفات على HTTPS.';$('yAccountDetails').innerHTML=this.currentUser?`<b>الإيميل:</b> <span dir="ltr">${esc(this.currentUser.email)}</span><br><b>المزامنة:</b> ${this.conflict?'تعارض':this.pending?'تعديلات محلية لم تُرفع':'سحابية'}<br><b>رقم النسخة:</b> ${this.revision}<br><b>الثيم:</b> ${esc(document.body.dataset.design)}`:'التجربة الآن بدون حساب حقيقي.';$('yAccountError').textContent=this.accountError||'Notion: الربط لكل مستخدم يحتاج إعداد تطبيق OAuth منفصل على الخادم.';$('yManualSync').disabled=!this.currentUser||this.conflict;$('yReloadServer').disabled=!this.currentUser;$('yLogout').hidden=!this.currentUser},
- signedOut(){clearTimeout(this.timer);window.YawmiFeatures?.onSignedOut?.();window.YawmiSeasons?.onSignedOut?.();this.ready=false;this.currentUser=null;this.revision=0;this.pending=null;this.conflict=false;this.adapter?.resetForSignout();this.status('سجّل الدخول');if($('ymSyncMini'))$('ymSyncMini').textContent='☁ سجّل الدخول';if(configured){this.gate(true);this.setTab('login')}}
+ renderConflict(){
+ const el=$('ymConflictResolver');if(!el)return;
+ const m=this.mergeContext;
+ if(!this.conflict||!m){el.hidden=true;el.innerHTML='';return;}
+ el.hidden=false;
+ const snapLabel=obj=>obj&&typeof obj==='object'
+  ?'مهام: '+(obj.tasks||[]).length+' · عادات: '+(obj.habits||[]).length+' · أيام: '+Object.keys(obj.daily||{}).length
+  :'لا توجد بيانات';
+ const head='<h3>⚠ مراجعة تعارض الجهازين</h3><p class="muted mini">لا يتم استبدال أي تعديل تلقائيًا. صدّر المسودة قبل الاختيار.</p>'
+  +'<p class="muted mini">على جهازك: '+snapLabel(m.local)+'</p><p class="muted mini">على السحابة: '+snapLabel(m.remote)+'</p>';
+ if(!m.base){el.innerHTML=head+'<p class="muted mini">لا توجد نسخة أساس للمقارنة بدقة. صدّر مسودتك أولًا ثم اختر «تحميل من السحابة»، أو احتفظ بالملف للمراجعة اليدوية.</p>';return}
+ const diff=window.YawmiOffline?.threeWay(m.base,m.local,m.remote);
+ const conflicts=diff?.conflicts||[];
+ m.paths=conflicts;
+ if(conflicts.length>30){el.innerHTML=head+'<p class="muted mini">التعارضات أكثر من 30 حقلًا. لا ننصح بالدمج الآلي؛ صدّر مسودتك وراجعها.</p>';return}
+ if(!conflicts.length){el.innerHTML=head+'<p>التغييرات يمكن دمجها من غير فقد.</p><button class="btn" data-ym-merge-confirm>دمج النسختين بعد المراجعة</button>';return}
+ const preview=(obj,path)=>{
+  const tokens=path.match(/\.[^.[\]]+|\[[^\]]+\]/g)||[];
+  let val=obj;for(const t of tokens){
+   if(val==null)break;
+   const key=t[0]==='.'?t.slice(1):t.slice(1,-1);
+   val=Array.isArray(val)?val.find(x=>x?.id===key):val[key];
+  }
+  const raw=JSON.stringify(val);
+  return esc((raw===undefined?'(محذوف)':raw).slice(0,160));
+ };
+ el.innerHTML=head+'<p class="muted mini">اختر المصدر لكل حقل متعارض. بقية التعديلات المختلفة سيتم جمعها تلقائيًا.</p>'
+ +conflicts.map((path,i)=>'<div class="ym-conflict-item"><b dir="ltr">'+esc(path)+'</b>'
+  +'<div class="ym-conflict-sources"><small>الجهاز: '+preview(m.local,path)+'</small><small>السحابة: '+preview(m.remote,path)+'</small></div>'
+  +'<select data-ym-conflict-choice="'+i+'" aria-label="مصدر الحقل '+(i+1)+'"><option value="">اختر المصدر</option><option value="local">احتفظ بتعديل الجهاز</option><option value="remote">احتفظ بتعديل السحابة</option></select></div>').join('')
+ +'<button type="button" class="btn" data-ym-merge-confirm>دمج الخيارات وحفظها</button>';
+ },
+ async acceptConflictResolution(){
+ if(!this.conflict||!this.mergeContext||!this.currentUser)return;
+ if(!navigator.onLine){this.accountError='افتح الإنترنت أولًا لمراجعة آخر نسخة سحابية.';this.updateAccount();return}
+ const m=this.mergeContext;if(!m.base){this.accountError='لا توجد نسخة أساس آمنة، صدّر المسودة وراجعها قبل الاستبدال.';this.updateAccount();return}
+ const options={};
+ for(const sel of $('ymConflictResolver').querySelectorAll('[data-ym-conflict-choice]')){
+  if(!sel.value){this.accountError='اختر الجهاز أو السحابة لكل حقل متعارض.';this.updateAccount();return}
+  options[m.paths[Number(sel.dataset.ymConflictChoice)]]=sel.value;
+ }
+ const newest=await this.sb.from('yawmi_documents').select('data,revision').eq('user_id',this.currentUser.id).single();
+ if(newest.error){this.accountError='تعذر التحقق من نسخة السحابة الجديدة: '+newest.error.message;this.updateAccount();return}
+ if(Number(newest.data.revision)!==Number(m.remoteRevision)){
+  this.mergeContext.remote=newest.data.data;this.mergeContext.remoteRevision=Number(newest.data.revision);
+  this.accountError='وصل تعديل أحدث من جهاز آخر، راجع الاختيارات الجديدة قبل المتابعة.';this.updateAccount();return
+ }
+ const result=window.YawmiOffline.threeWay(m.base,m.local,newest.data.data,options);
+ if(result.conflicts.length){this.accountError='بقيت تعارضات غير محلولة. لا توجد أي كتابة على السحابة.';this.updateAccount();return}
+ this.revision=Number(newest.data.revision);
+ this.cache(this.currentUser.id,newest.data.data,this.revision);
+ this.adapter.replaceSnapshot(result.data);
+ this.pending=result.data;this.version++;
+ this.store(this.currentUser.id,result.data);
+ this.conflict=false;this.mergeContext=null;this.accountError='تم دمج اختياراتك؛ جاري حفظ الإصدار الجديد.';
+ this.status('دمج واعتماد التعديلات','pending');this.updateAccount();await this.flush();
+ },
+ updateAccount(){if(!configured)this.accountError='هذه نسخة تجريبية محلية. لتفعيل إيميلات حقيقية، ضع إعدادات Supabase في config.js وارفع الملفات على HTTPS.';$('yAccountDetails').innerHTML=this.currentUser?`<b>الإيميل:</b> <span dir="ltr">${esc(this.currentUser.email)}</span><br><b>المزامنة:</b> ${this.conflict?'تعارض':this.pending?'تعديلات محلية لم تُرفع':'سحابية'}<br><b>رقم النسخة:</b> ${this.revision}<br><b>الثيم:</b> ${esc(document.body.dataset.design)}`:'التجربة الآن بدون حساب حقيقي.';$('yAccountError').textContent=this.accountError||'Notion: الربط لكل مستخدم يحتاج إعداد تطبيق OAuth منفصل على الخادم.';$('yManualSync').disabled=!this.currentUser||this.conflict;$('yReloadServer').disabled=!this.currentUser;$('yLogout').hidden=!this.currentUser;this.renderConflict()},
+ signedOut(){clearTimeout(this.timer);window.YawmiFeatures?.onSignedOut?.();window.YawmiSeasons?.onSignedOut?.();this.ready=false;this.currentUser=null;this.revision=0;this.pending=null;this.conflict=false;this.mergeContext=null;this.adapter?.resetForSignout();this.status('سجّل الدخول');if($('ymSyncMini'))$('ymSyncMini').textContent='☁ سجّل الدخول';if(configured){this.gate(true);this.setTab('login')}}
 };window.YawmiCloud=Y;window.addEventListener('online',()=>{if(Y.pending&&!Y.conflict)Y.flush();else if(Y.ready)Y.refresh()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&Y.pending)Y.flush();if(!document.hidden&&Y.ready&&!Y.pending)Y.refresh()});
 })();
