@@ -103,7 +103,7 @@ function wire(){
  if(ready())refresh(true);
 }
 window.YawmiSeasons={get current(){return current?.mine||null},refresh,render,onSignedOut(){
- current=null;questArchive=[];lastUser='';lastLoaded=0;toast='';render();
+ try{if(lastUser)localStorage.removeItem('yawmi_season_cache_'+lastUser)}catch(_){}current=null;questArchive=[];lastUser='';lastLoaded=0;toast='';render();
 }};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();
 })();
