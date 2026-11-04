@@ -115,13 +115,13 @@ test('v32 finance and journal pass axe accessibility smoke test',async({page})=>
  const res=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();
  expect(res.violations.filter(v=>v.impact==='serious'||v.impact==='critical')).toEqual([]);
 });
-test('three skins expose finance/journal navigation, screens and shortcuts',async({page})=>{
+test('three skins expose finance/journal only through navigation, not home shortcuts',async({page})=>{
  for(const f of ['01_ATLAS_Executive.html','02_JOURNAL_Editorial.html','03_QUEST_RPG.html']){
   await page.goto('/'+f,{waitUntil:'domcontentloaded'});
   await expect(page.locator('#ymMoneyApp')).toHaveCount(1);
   await expect(page.locator('#ymDiaryApp')).toHaveCount(1);
-  await expect(page.locator('.ym-life-home-shortcuts [data-tab="money"]')).toHaveCount(1);
-  await expect(page.locator('.ym-life-home-shortcuts [data-tab="diary"]')).toHaveCount(1);
+  await expect(page.locator('.ym-life-home-shortcuts')).toHaveCount(0);
+  await expect(page.locator('#page-home [data-tab="money"], #page-home [data-tab="diary"]')).toHaveCount(0);
   await expect(page.locator('.sidebar [data-tab="money"]')).toHaveCount(1);
   await expect(page.locator('.sidebar [data-tab="diary"]')).toHaveCount(1);
  }
