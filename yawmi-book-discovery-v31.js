@@ -74,7 +74,7 @@ function queries(){
  const s=(cats.find(c=>c[0]===cat)||cats[0])[2];
  const q=keyword.trim()||'subject:'+s;
  if(lang==='ar')return [q+' AND language:ara'];
- if(lang==='foreign')return [q+(keyword?'':' AND language:eng')];
+ if(lang==='foreign')return [q];
  if(/[\u0600-\u06FF]/.test(keyword))return [q];
  return [q,q+' AND language:ara'];
 }
