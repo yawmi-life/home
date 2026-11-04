@@ -33,7 +33,7 @@ function keyed(arr){
  if(!Array.isArray(arr)||!arr.every(x=>isPlain(x)&&typeof x.id==='string'&&x.id.length>0))return false;
  return new Set(arr.map(x=>x.id)).size===arr.length;
 }
-function threeWay(base,local,remote){
+function threeWay(base,local,remote,choices={}){
  const conflicts=[];
  function walk(a,b,c,path){
   if(same(b,a))return clone(c);
@@ -52,6 +52,7 @@ function threeWay(base,local,remote){
     if(merged!==undefined)out.push(merged);
    }return out;
   }
+  if(Object.prototype.hasOwnProperty.call(choices,path)&&['local','remote'].includes(choices[path]))return clone(choices[path]==='remote'?c:b);
   conflicts.push(path);
   return clone(b);
  }
