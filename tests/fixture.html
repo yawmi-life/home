@@ -1,0 +1,38 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>YAWMI quality fixture</title>
+<link rel="stylesheet" href="../yawmi-seasons-v1.css">
+<link rel="stylesheet" href="../yawmi-habit-insights-v30.css">
+<link rel="stylesheet" href="../yawmi-friend-challenges-v30.css">
+<style>:root{--accent:#6f68af;--text:#1b1d24;--muted:#656565;--border:#ddd;--surface:#fff;--panel2:#f6f6fb}
+body{font:16px system-ui;margin:0 auto;max-width:1000px;padding:18px;color:var(--text)}.panel{margin:12px 0;border:1px solid var(--border);padding:14px;border-radius:12px}.muted{color:var(--muted)}.btn{background:#504e9c;color:#fff;padding:9px 12px;border:0;border-radius:8px}</style></head>
+<body><main><h1>اختبارات يومي</h1><section id="ymSeasonPanel" class="panel"></section>
+<section id="ymChallengesPanel" class="panel"></section><section id="ymHabitInsights" class="panel"></section></main>
+<script>
+window.__fixtureCalls=[];
+const secret='YM-SECRET_NOT_PUBLIC';
+const friends=[{name:'صديق الاختبار',friend_ref:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'}];
+const challengeData=[];
+const today='2026-11-04';
+const day={};for(let i=0;i<20;i++){const d=new Date('2026-11-04T12:00:00Z');d.setUTCDate(d.getUTCDate()-i);if(i!==0&&i!==6)day[d.toISOString().slice(0,10)]={habits:{reading:1}}}
+const seasonData={season:{code:'S01',ends:'2026-12-31T21:00:00Z'},profile:{name:'مُختبر',code:secret,friends_enabled:true},
+ mine:{rank:'جولد',xp:1400,activity_days:7,position:1},
+ leaders:[{name:'مُختبر',rank:'جولد',xp:1400,days:7,position:1,is_me:true},
+ {name:'صديق الاختبار',rank:'سيلفر',xp:750,days:4,position:2,is_me:false}],
+ awards:[],requests:[],friends};
+window.YawmiExtraAPI={getState:()=>({habits:[{id:'reading',title:'القراءة',active:true,target:1}],daily:day}),today:()=>today,getScores:()=>({xp:1400})};
+window.YawmiCloud={ready:true,currentUser:{id:'user-a'},pending:null,conflict:false,
+ sb:{rpc:async(name,args)=>{window.__fixtureCalls.push({name,args});
+ if(name==='yawmi_ranked_dashboard')return {data:seasonData,error:null};
+ if(name==='yawmi_ranked_sync')return {data:{},error:null};
+ if(name==='yawmi_quest_archive')return {data:[],error:null};
+ if(name==='yawmi_challenges_dashboard')return {data:challengeData,error:null};
+ if(name==='yawmi_challenge_create'){challengeData.push({id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',peer:'صديق الاختبار',metric:args.p_metric,
+ target:args.p_target,state:'pending',mine:0,theirs:0,incoming:false,badge:false});return {data:challengeData[0].id,error:null}}
+ return {data:null,error:null};
+ }}};
+</script>
+<script src="../yawmi-seasons-v1.js"></script>
+<script src="../yawmi-habit-insights-v30.js"></script>
+<script src="../yawmi-friend-challenges-v30.js"></script>
+</body></html>
