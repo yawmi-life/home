@@ -34,3 +34,13 @@
 .ym-private-code{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 14px;padding:10px;border:1px solid var(--border);border-radius:12px}
 .ym-private-code>span{min-width:110px;padding:8px 12px;background:var(--panel2,var(--surface));border-radius:8px;font-family:monospace;direction:ltr;letter-spacing:.6px;user-select:text}
 .ym-private-code button{white-space:nowrap}
+
+/* V30: conflict review accessible within account sheet */
+.ym-conflict-resolver{margin:12px 0;padding:12px;border:1px solid var(--accent);border-radius:12px;max-height:58vh;overflow:auto}
+.ym-conflict-resolver h3{font-size:17px;margin:0 0 7px}
+.ym-conflict-resolver .ym-conflict-item{border-bottom:1px solid var(--border);padding:10px 0;min-width:0}
+.ym-conflict-item b{font-size:12px;overflow-wrap:anywhere}
+.ym-conflict-sources{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:8px 0}
+.ym-conflict-sources small{display:block;background:var(--panel2,var(--surface));padding:8px;overflow-wrap:anywhere;border-radius:8px}
+.ym-conflict-item select{max-width:100%;width:100%;min-height:36px;background:var(--panel2,var(--surface));color:var(--text);border:1px solid var(--border);border-radius:8px}
+@media(max-width:540px){.ym-conflict-sources{grid-template-columns:1fr}}

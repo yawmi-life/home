@@ -48,7 +48,7 @@ function render(){
  +(questArchive.length?'<div class="ym-quest-medals">'+questArchive.map(q=>'<span>🏅 '+escape(q.season)+' · '+escape(({starter:'البداية القوية',steady:'الثبات الذهبي',legend:'أسطورة الموسم'})[q.quest]||q.quest)+'</span>').join('')+'</div>':'')
  +(awards.length?awards.map(a=>'<div><span>'+medal(a.medal)+' '+escape(a.season)+' · '+escape(a.rank)+'</span><b>'+format(a.xp)+' XP</b><small>'+(a.position?'المركز '+format(a.position):'موسم مكتمل')+' · أعلى رتبة: '+escape(a.peak_rank||a.rank)+'</small></div>').join(''):'<p class="muted mini">أوسمة الموسم الأول تُحفظ هنا بعد نهايته. الأرشيف دائم ولا يُصفّر.</p>')+'</div>'
  +(toast?'<p class="ym-league-toast" role="status">'+escape(toast)+'</p>':'')
- +'<p class="muted mini">XP الموسم منفصل عن XP الشخصي، ويُحسب من المهام والعادات والتركيز المسجل بسقف يومي. الإنجازات الأوفلاين تظهر بعد المزامنة. الترتيب لا يثبت أداء النشاط خارج التطبيق.</p>';
+ +'<p class="muted mini">XP الموسم منفصل عن XP الشخصي، ويُحسب من المهام والعادات والتركيز المسجل بسقف يومي. الإنجازات الأوفلاين تظهر بعد المزامنة. النقاط الموسمية الإضافية للأيام الماضية تُقبل خلال 7 أيام فقط. الترتيب لا يثبت أداء النشاط خارج التطبيق.</p>';
  if(window.YawmiRank&&app()?.getScores)window.YawmiRank.render(app().getScores());
 }
 async function refresh(force=false){
