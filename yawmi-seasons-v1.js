@@ -42,7 +42,7 @@ function render(){
  +'<button type="button" class="btn" data-league-save>حفظ إعدادات الخصوصية</button><p class="muted mini">البريد ومحتوى مهامك وعاداتك يظل خاصًا. الترتيب العام مفتوح لجميع الحسابات تلقائيًا. البريد وكود الصداقة وتفاصيل المهام لا تُعرض فيه.</p></details>'
  +'<details class="ym-league-details"><summary>🤝 الأصدقاء وطلبات الإضافة ('+req.length+')</summary>'
  +'<div class="ym-friend-add"><input id="ymFriendCode" placeholder="YM-XXXXXXXXXX" maxlength="20" dir="ltr" aria-label="معرف صديق"><button type="button" class="btn soft" data-league-add>إرسال طلب</button></div>'
- +(req.length?'<h4>طلبات واردة</h4>'+req.map(r=>'<div class="ym-friend-request"><b>'+escape(r.name)+'</b><button type="button" data-league-respond="'+escape(r.request_id)+'" data-answer="yes">قبول</button><button type="button" data-league-respond="'+escape(r.code)+'" data-answer="no">رفض</button></div>').join(''):'<p class="muted mini">لا توجد طلبات واردة.</p>')
+ +(req.length?'<h4>طلبات واردة</h4>'+req.map(r=>'<div class="ym-friend-request"><b>'+escape(r.name)+'</b><button type="button" data-league-respond="'+escape(r.request_id)+'" data-answer="yes">قبول</button><button type="button" data-league-respond="'+escape(r.request_id)+'" data-answer="no">رفض</button></div>').join(''):'<p class="muted mini">لا توجد طلبات واردة.</p>')
  +(friends.length?'<p class="muted mini">الأصدقاء: '+friends.map(f=>escape(f.name)).join(' · ')+'</p>':'')+'</details>'
  +'<div class="ym-league-archive"><h4>🎖️ أرشيف المواسم والميداليات</h4>'
  +(questArchive.length?'<div class="ym-quest-medals">'+questArchive.map(q=>'<span>🏅 '+escape(q.season)+' · '+escape(({starter:'البداية القوية',steady:'الثبات الذهبي',legend:'أسطورة الموسم'})[q.quest]||q.quest)+'</span>').join('')+'</div>':'')
