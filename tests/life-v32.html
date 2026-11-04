@@ -1,0 +1,35 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>اختبار مالية ويوميات يومي</title>
+<link rel="stylesheet" href="../yawmi-money-v32.css">
+<link rel="stylesheet" href="../yawmi-diary-v32.css">
+<style>:root{--accent:#8370d7;--accent-faint:#eee9ff;--text:#252337;--muted:#626278;--border:#d9d8e4;--panel:#fff;--surface:#fff}
+*{box-sizing:border-box}body{background:#f8f7fc;color:#252337;font:15px system-ui;margin:0 auto;max-width:1150px;padding:18px}
+.panel{background:#fff;border-radius:15px;border:1px solid var(--border)}
+.btn{background:#6152af;color:#fff;border:0;border-radius:9px;padding:10px 14px}
+.btn.soft{background:#eeeafa;color:#37304f}.btn.outline{border:1px solid #bcb7d0;background:transparent;color:#443b70}
+.muted{color:#686680}.mini{font-size:11px}
+.section-eyebrow{color:var(--accent);font-size:10px;letter-spacing:1px}
+input,select,textarea,button{font:inherit}</style></head>
+<body><main><h1>يومي: اختبار المميزات الجديدة</h1>
+<section id="page-money" class="page"><div id="ymMoneyApp"></div></section>
+<section id="page-diary" class="page"><div id="ymDiaryApp"></div></section></main>
+<script>
+const stored=sessionStorage.getItem('v32_fixture_state');
+window.__state=stored?JSON.parse(stored):{version:7,profile:{name:'مُختبر'},finance:null,journalEntries:[],journalDraft:null};
+window.__saves=0;window.__notifications=[];
+let seq=0;
+window.YawmiExtraAPI={
+ getState:()=>window.__state,
+ save:()=>{window.__saves++;sessionStorage.setItem('v32_fixture_state',JSON.stringify(window.__state));return true;},
+ uid:()=>('fixture-id-'+(++seq)+'-'+Date.now()),
+ today:()=>new Date().toISOString().slice(0,7)+'-05',
+ notify:x=>window.__notifications.push(String(x)),
+ getScores:()=>({xp:500,coins:20})
+};
+</script>
+<script src="../yawmi-money-v32.js"></script>
+<script src="../yawmi-diary-v32.js"></script>
+<script>document.addEventListener('DOMContentLoaded',()=>{
+ window.YawmiMoney.render();window.YawmiDiary.render();
+});</script></body></html>
