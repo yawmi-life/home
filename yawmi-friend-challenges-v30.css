@@ -1,0 +1,20 @@
+/* YAWMI V30 shared social challenge cards */
+.ym-challenges-panel{margin-top:14px;padding:18px}
+.ym-challenge-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ym-challenge-heading h3{margin:0 0 5px;font-size:20px}
+.ym-challenge-create{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:14px 0;padding:12px;background:var(--panel2,var(--surface));border-radius:12px}
+.ym-challenge-create label{display:flex;flex:1;min-width:110px;flex-direction:column;gap:4px;font-size:12px}
+.ym-challenge-create select,.ym-challenge-create input{width:100%;min-height:36px;padding:6px;border:1px solid var(--border);border-radius:8px;color:var(--text);background:var(--surface,var(--panel2))}
+.ym-challenge-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ym-challenge-card{border:1px solid var(--border);padding:13px;border-radius:13px;min-width:0}
+.ym-challenge-card-title{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;font-size:13px}
+.ym-challenge-card-title span{color:var(--muted)}
+.ym-challenge-card p{font-size:12px;color:var(--muted);margin:8px 0}
+.ym-challenge-bar-label{display:flex;justify-content:space-between;font-size:11px;margin:8px 0 4px}
+.ym-challenge-bar{height:6px;background:var(--border);border-radius:20px;overflow:hidden}
+.ym-challenge-bar i{display:block;height:100%;background:var(--accent);border-radius:20px}
+.ym-challenge-card .ym-challenge-badge{color:var(--accent);font-weight:800}
+.ym-challenge-actions{display:flex;gap:7px;margin-top:12px}
+.ym-challenge-actions button{padding:7px 12px;border:1px solid var(--border);border-radius:9px;background:var(--panel2,var(--surface));color:var(--text)}
+.ym-challenge-message{font-size:12px;color:var(--accent);font-weight:800}
+@media(max-width:650px){.ym-challenge-rows{grid-template-columns:1fr}.ym-challenge-create label{min-width:40%}}
