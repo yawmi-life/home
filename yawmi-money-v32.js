@@ -8,7 +8,7 @@ const incomes=[['salary','💰','راتب'],['freelance','🧑‍💻','عمل �
 const labels={income:'دخل',expense:'مصروف',transfer:'تحويل'};
 const defaultAccounts=[{id:'cash',name:'نقدي',opening:0,icon:'💵'},{id:'bank',name:'حساب بنكي',opening:0,icon:'🏦'},{id:'wallet',name:'محفظة إلكترونية',opening:0,icon:'📱'}];
 let shownMonth=new Date().toISOString().slice(0,7),searchTerm='',typeFilter='all',categoryFilter='all',accountFilter='all';
-let isHidden=false,editing=null,editGoal=null,activeForm='transaction',formType='expense',formRecurring=false;
+let isHidden=false,editing=null,editGoal=null,activeForm='transaction',formType='expense',formRecurring=false,lastState=null;
 const today=()=>api()?.today?.()||new Date().toISOString().slice(0,10);
 const monthOf=d=>String(d||'').slice(0,7);
 const cur=f=>currencies.includes(f?.currency)?f.currency:'SAR';
@@ -23,6 +23,7 @@ const safeDay=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))&&!Number.isNaN(Date.p
 const money=(n,c='SAR')=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:c,maximumFractionDigits:2,minimumFractionDigits:2}).format(clampCents(n)/100);
 function ensure(){
  const s=api()?.getState?.();if(!s)return null;
+ if(lastState!==s){lastState=s;searchTerm='';typeFilter='all';categoryFilter='all';accountFilter='all';isHidden=false;shownMonth=(api()?.today?.()||new Date().toISOString().slice(0,10)).slice(0,7);}
  if(!s.finance||typeof s.finance!=='object'||Array.isArray(s.finance))s.finance={};
  const f=s.finance;
  if(!Array.isArray(f.accounts))f.accounts=structuredClone(defaultAccounts);
