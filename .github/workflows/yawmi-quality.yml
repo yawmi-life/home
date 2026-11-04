@@ -1,0 +1,52 @@
+name: YAWMI PWA Quality
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Static syntax and offline merge tests
+        run: |
+          node --test tests/core.test.cjs
+          for f in cloud.js yawmi-offline-v1.js yawmi-seasons-v1.js yawmi-habit-insights-v30.js yawmi-friend-challenges-v30.js sw.js; do node --check "$f"; done
+  browser:
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: yawmi-browser-test-report
+          path: playwright-report/
+  lighthouse:
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Audit static landing page
+        run: npx --yes @lhci/cli@0.16.0 autorun
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: yawmi-lighthouse-report
+          path: lighthouse-ci-results/
