@@ -86,7 +86,7 @@ function renderFocus(){
  if([15,25,45,50].includes(focus.minutes))$('ymFocusMinutes').value=String(focus.minutes);
  $('ymFocusGoal').value=focus.goal;
  const last=focusRows().slice(-3).reverse();
- $('ymFocusRecent').innerHTML=last.length?'<div class="ym-focus-log">'+last.map(x=>'<div><span>✓ '+x.minutes+' دقيقة · '+esc(x.date)+'</span><button type="button" data-ym-focus-delete="'+esc(x.id)+'" title="حذف الجلسة">🗑</button></div>').join('')+'</div>':'';
+ $('ymFocusRecent').innerHTML=last.length?'<div class="ym-focus-log">'+last.map(x=>{const goal=(S().goals||[]).find(g=>g.id===x.goalId);return '<div><span>✓ '+x.minutes+' دقيقة · '+esc(x.date)+(goal?' · '+esc(goal.title):'')+'</span><button type="button" data-ym-focus-delete="'+esc(x.id)+'" title="حذف الجلسة">🗑</button></div>'}).join('')+'</div>':'';
  tick();
 }
 function renderChallenges(){
@@ -94,7 +94,7 @@ function renderChallenges(){
  const week=weekStart(date()),stats=weekStats(week),claimed=Array.isArray(S().weeklyClaims)?S().weeklyClaims:[];
  box.innerHTML='<div class="ym-section-head"><div><small>WEEKLY QUESTS</small><h3>🏆 تحديات الأسبوع</h3></div><span class="ym-week-range">'+esc(week)+' إلى '+esc(addDays(week,6))+'</span></div>'
  +'<div class="ym-quest-grid">'+QUESTS.map(q=>{const value=Math.min(q.goal,stats[q.stat]),done=value>=q.goal,claimedNow=claimed.some(x=>x.week===week&&x.quest===q.id);
- return '<article class="ym-quest"><div><span>'+q.icon+'</span><b>'+q.title+'</b></div><p>'+q.desc+'</p><div class="progress"><i style="width:'+(100*value/q.goal)+'%"></i></div><small>'+value+' / '+q.goal+'</small><button data-ym-claim="'+q.id+'" '+(!done||claimedNow?'disabled':'')+'>'+(claimedNow?'✓ تم الاستلام':done?'استلام المكافأة':'قيد التقدم')+'</button></article>'}).join('')+'</div>';
+ return '<article class="ym-quest"><div><span>'+q.icon+'</span><b>'+q.title+'</b></div><p>'+q.desc+'</p><div class="progress"><i style="width:'+(100*value/q.goal)+'%"></i></div><small>'+value+' / '+q.goal+'</small><button '+(claimedNow?'data-ym-unclaim="'+q.id+'"':'data-ym-claim="'+q.id+'"')+' '+(!done&&!claimedNow?'disabled':'')+'>'+(claimedNow?'↶ التراجع عن الاستلام':done?'استلام المكافأة':'قيد التقدم')+'</button></article>'}).join('')+'</div>';
 }
 function claimQuest(id){
  const q=QUESTS.find(x=>x.id===id),s=S(),week=weekStart(date());
@@ -104,6 +104,12 @@ function claimQuest(id){
  s.weeklyClaims.push({id:api().uid(),week,date:date(),quest:id});
  if(!s.daily[date()])s.daily[date()]={habits:{},tasks:{},water:0,mood:0,note:''};
  api().activity('reward','استلمت مكافأة تحدي '+q.title,date());api().save();api().render();api().notify('مكافأة تحدي الأسبوع! ✦');
+}
+function unclaimQuest(id){
+ const s=S(),week=weekStart(date()),claim=(s?.weeklyClaims||[]).find(x=>x.quest===id&&x.week===week);
+ if(!claim||!confirm('التراجع عن مكافأة هذا التحدي؟ سيتم خصم نقاطها وعملاتها.'))return;
+ s.weeklyClaims=s.weeklyClaims.filter(x=>x.id!==claim.id);
+ api().activity('reward','تراجعت عن مكافأة تحدي '+id,date());api().save();api().render();
 }
 function renderReview(){
  const box=$('ymWeeklyReview');if(!box||!S())return;
@@ -132,7 +138,7 @@ function showOnboard(){
  if(Object.keys(S().daily||{}).length>0||(S().history||[]).length||(S().books||[]).length)return;
  openedOnboard=true;
  const h=S().habits||[];
- $('ymOnboardChoices').innerHTML=h.filter(x=>x.id!=='water'||true).map((x,i)=>'<label><input type="checkbox" value="'+esc(x.id)+'" '+(['fajr','reading','water'].includes(x.id)?'checked':'')+'> '+esc(x.icon||'✦')+' '+esc(x.title)+'</label>').join('');
+ $('ymOnboardChoices').innerHTML=h.map((x,i)=>'<label><input type="checkbox" value="'+esc(x.id)+'" '+(['fajr','reading','water'].includes(x.id)?'checked':'')+'> '+esc(x.icon||'✦')+' '+esc(x.title)+'</label>').join('');
  $('ymOnboard').showModal();
 }
 function applyOnboard(skip=false){
@@ -183,7 +189,7 @@ function wire(){
   if(b.id==='ymFocusReset')focusReset();
   if(b.id==='ymFocusFinish')finishFocus();
   if(b.dataset.ymFocusDelete)deleteFocus(b.dataset.ymFocusDelete);
-  if(b.dataset.ymClaim)claimQuest(b.dataset.ymClaim);
+  if(b.dataset.ymClaim)claimQuest(b.dataset.ymClaim);if(b.dataset.ymUnclaim)unclaimQuest(b.dataset.ymUnclaim);
   if(b.dataset.ymQuick==='water')api().addWaterMl?.(250);
   if(b.dataset.ymQuick==='quran')api().goQuran();
   if(b.dataset.ymQuick==='tasks')api().goTasks?.();
