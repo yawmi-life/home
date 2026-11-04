@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id), esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const api=()=>window.YawmiExtraAPI,state=()=>api()?.getState(),library=()=>{const s=state();if(!s)return [];if(!Array.isArray(s.books))s.books=[];return s.books};
-let filter='all',editId=null;
+let filter='all',editId=null,pendingCatalog=null;
 const statusLabel={unread:'لم أقرأه بعد',reading:'أقرأه حاليًا',done:'تمت القراءة'};
 function drawer(){
 if($('yawmiMenuDrawer'))return;
@@ -24,22 +24,22 @@ const action=b.dataset.yamAction;if(!action)return;if(action==='install'){if(win
 }
 function renderBooks(){
 if(!api()||!$('ymBooksGrid'))return;
-const books=library();$('ymBooksCount').textContent=books.length+' كتاب';
+const books=library();$('ymBooksCount').textContent=books.length+' كتاب';window.YawmiBookCatalog?.visible?.();
 const filters=[['all','كل الكتب'],['reading','أقرأه حاليًا'],['unread','لم أقرأه بعد'],['done','تمت القراءة'],['favorite','المفضلة']];
 $('ymBooksFilters').innerHTML=filters.map(([k,t])=>'<button type="button" data-book-filter="'+k+'" class="'+(filter===k?'chosen':'')+'">'+t+'</button>').join('');
 const show=books.filter(b=>filter==='all'||filter==='favorite'&&b.favorite||b.status===filter);
 $('ymBooksGrid').innerHTML=show.length?show.map(b=>{
 const total=Math.max(1,Number(b.totalPages)||1),page=Math.max(0,Math.min(total,Number(b.currentPage)||0)),pct=Math.round(page/total*100),latest=Array.isArray(state().bookReadings)?state().bookReadings[state().bookReadings.length-1]:null,canUndo=latest?.bookId===b.id&&Number(latest.to)===page;
-return '<article class="ym-book-card"><div class="ym-book-top"><div class="ym-book-cover">📖</div><div class="ym-book-text"><h3>'+esc(b.title)+'</h3><span>'+statusLabel[b.status]+'</span></div><button class="ym-favorite '+(b.favorite?'yes':'')+'" data-book-fav="'+esc(b.id)+'" aria-label="المفضلة">'+(b.favorite?'★':'☆')+'</button></div>'
+return '<article class="ym-book-card"><div class="ym-book-top"><div class="ym-book-cover">'+(Number.isInteger(Number(b.coverId))&&Number(b.coverId)>0?'<img src="https://covers.openlibrary.org/b/id/'+Number(b.coverId)+'-S.jpg" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:6px">':'📖')+'</div><div class="ym-book-text"><h3>'+esc(b.title)+'</h3>'+(b.author?'<small style="display:block;color:var(--muted)">'+esc(b.author)+'</small>':'')+'<span>'+statusLabel[b.status]+'</span>'+(Number(b.catalogReviews)>0&&Number(b.catalogRating)>0?'<small style="display:block;color:var(--accent)">⭐ '+Number(b.catalogRating).toFixed(1)+'/5 · Open Library ('+Number(b.catalogReviews)+' تقييم)</small>':'')+'</div><button class="ym-favorite '+(b.favorite?'yes':'')+'" data-book-fav="'+esc(b.id)+'" aria-label="المفضلة">'+(b.favorite?'★':'☆')+'</button></div>'
 +'<div class="ym-book-progress"><div class="ym-book-numbers"><b>'+pct+'% مكتمل</b><span>'+page+' / '+total+' صفحة</span></div><div class="progress"><i style="width:'+pct+'%"></i></div></div>'
 +'<div class="ym-book-bottom"><div class="ym-book-stars">'+[1,2,3,4,5].map(n=>'<button data-book-rate="'+esc(b.id)+'" data-stars="'+n+'" class="'+(n<=b.rating?'lit':'')+'" aria-label="'+n+' نجوم">★</button>').join('')+'</div><button type="button" class="btn soft" data-book-edit="'+esc(b.id)+'">تعديل وتسجيل صفحات</button>'+(canUndo?'<button class="btn soft" type="button" data-ym-undo-book="'+esc(b.id)+'">↶ التراجع عن آخر قراءة</button>':'')+'</div>'
 +(b.notes?'<p class="ym-book-notes">'+esc(b.notes)+'</p>':'')+'</article>';
 }).join(''):'<div class="ym-empty">'+(books.length?'فيه '+books.length+' كتاب محفوظ، لكن مفيش نتائج في التصنيف ده. <button class="btn soft" type="button" data-ym-all-books>عرض كل الكتب</button>':'مفيش كتب محفوظة في الحساب المفتوح حاليًا. تأكد إنك مسجل بنفس حسابك على الكمبيوتر، أو أضف كتابًا جديدًا.')+'</div>';
 }
 function openBook(id){
-const b=library().find(x=>x.id===id);editId=b?.id||null;$('ymBookForm').reset();$('ymBookFormError').textContent='';
+const b=library().find(x=>x.id===id);editId=b?.id||null;pendingCatalog=null;$('ymBookForm').reset();$('ymBookFormError').textContent='';
 $('ymBookDialogTitle').textContent=b?'تعديل الكتاب':'إضافة كتاب';
-$('ymBookTitle').value=b?.title||'';$('ymBookPages').value=b?.totalPages||'';$('ymBookCurrent').value=b?.currentPage||0;
+$('ymBookTitle').value=b?.title||'';$('ymBookAuthor').value=b?.author||'';$('ymBookPages').value=b?.totalPages||'';$('ymBookCurrent').value=b?.currentPage||0;
 $('ymBookStatus').value=b?.status||'unread';$('ymBookRating').value=b?.rating||0;$('ymBookFavorite').checked=!!b?.favorite;$('ymBookNotes').value=b?.notes||'';$('ymBookDelete').hidden=!b;$('ymBookDialog').showModal();
 }
 function saveBook(ev){
@@ -47,10 +47,24 @@ ev.preventDefault();const a=api(),books=library(),title=$('ymBookTitle').value.t
 if(!title||!Number.isFinite(total)||total<1||total>100000||!Number.isFinite(page)||page<0||page>total){$('ymBookFormError').textContent='أدخل عنوان الكتاب وصفحاته، وتأكد من صحة رقم الصفحة الحالية.';return}
 const old=books.find(x=>x.id===editId),previousPage=Number(old?.currentPage)||0,highest=Math.max(0,Number(old?.highestPage??old?.currentPage)||0);
 let status=$('ymBookStatus').value;if(status==='done')page=total;if(page===total)status='done';else if(page>0&&status==='unread')status='reading';if(old&&page<previousPage)window.YawmiProgress?.reduceBook(old.id,previousPage-page,true);const delta=old?Math.max(0,page-previousPage):0;const completedNow=!!old&&page>=total&&!old.completedAt;
-const item={id:old?.id||a.uid(),title,totalPages:total,currentPage:page,highestPage:old&&page<previousPage?page:Math.max(highest,page),status,rating:Math.max(0,Math.min(5,Number($('ymBookRating').value)||0)),favorite:$('ymBookFavorite').checked,notes:$('ymBookNotes').value.trim().slice(0,4000),completedAt:page>=total?(old?.completedAt||(completedNow?a.today():undefined)):undefined,updatedAt:new Date().toISOString()};
+const meta=pendingCatalog;const item={...(old||{}),...(meta?{workKey:meta.key,coverId:meta.coverId,catalogRating:meta.rating,catalogReviews:meta.reviews}:{}),id:old?.id||a.uid(),title,author:$('ymBookAuthor').value.trim().slice(0,180),totalPages:total,currentPage:page,highestPage:old&&page<previousPage?page:Math.max(highest,page),status,rating:Math.max(0,Math.min(5,Number($('ymBookRating').value)||0)),favorite:$('ymBookFavorite').checked,notes:$('ymBookNotes').value.trim().slice(0,4000),completedAt:page>=total?(old?.completedAt||(completedNow?a.today():undefined)):undefined,updatedAt:new Date().toISOString()};
 if(old)Object.assign(old,item);else books.push(item);
 if(delta>0){const s=a.getState(),today=a.today(),r=s.daily[today]||(s.daily[today]={habits:{},tasks:{},water:0,mood:0,note:''});r.habits=r.habits||{};(s.bookReadings||(s.bookReadings=[])).push({id:a.uid(),bookId:old.id,from:previousPage,to:page,pages:delta,date:today});r.habits.reading=(Number(r.habits.reading)||0)+delta;a.activity('book','قرأت '+delta+' صفحة من '+title,today)}else a.activity('book',(old?'عدلت: ':'أضفت: ')+title,a.today());
-a.save();$('ymBookDialog').close();a.render();renderBooks();a.notify('تم حفظ الكتاب ✓');
+pendingCatalog=null;a.save();$('ymBookDialog').close();a.render();renderBooks();a.notify('تم حفظ الكتاب ✓');
+}
+function addFromCatalog(book){
+ if(!book||!/^\/works\/OL\d+W$/.test(String(book.key||'')))return;
+ const existing=library().find(b=>b.workKey===book.key||b.title?.trim().toLowerCase()===String(book.title||'').trim().toLowerCase());
+ if(existing){openBook(existing.id);api()?.notify?.('الكتاب موجود في مكتبتك بالفعل؛ يمكنك متابعة قراءته أو تعديل صفحاته.');return}
+ openBook(null);
+ pendingCatalog={key:book.key,coverId:Math.max(0,Math.floor(Number(book.coverId)||0)),
+ rating:Number(book.rating)>0?Number(book.rating):null,reviews:Math.max(0,Math.floor(Number(book.reviews)||0))};
+ $('ymBookDialogTitle').textContent='إضافة كتاب من دليل الكتب';
+ $('ymBookTitle').value=String(book.title||'').slice(0,160);
+ $('ymBookAuthor').value=String(book.author||'').slice(0,180);
+ $('ymBookPages').value=Number(book.pages)>0?Math.floor(Number(book.pages)):'';
+ $('ymBookCurrent').value=0;$('ymBookStatus').value='unread';
+ $('ymBookFormError').textContent=book.pages?'عدد الصفحات تقريبي وقد يختلف حسب الطبعة. تأكد منه قبل الحفظ.':'لم تتوفر الصفحات في المصدر؛ اكتب عدد صفحات نسختك قبل الحفظ.';
 }
 function setup(){
 if(!api())return;drawer();
@@ -63,5 +77,5 @@ if(b.dataset.bookFav){const x=library().find(x=>x.id===b.dataset.bookFav);if(x){
 if(b.dataset.bookRate){const x=library().find(x=>x.id===b.dataset.bookRate);if(x){x.rating=Number(b.dataset.stars);api().save();renderBooks()}}
 });
 }
-window.YawmiExtras={renderBooks,showAll:()=>{filter='all';renderBooks()}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
+window.YawmiExtras={renderBooks,addFromCatalog,showAll:()=>{filter='all';renderBooks()}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();
