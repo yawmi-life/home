@@ -1,0 +1,55 @@
+/* YAWMI V31 — bilingual book search and detail cards, compatible with all three skins. */
+.ym-catalog-panel{padding:18px;margin:16px 0;min-width:0;overflow:hidden}
+.ym-catalog-panel button,.ym-catalog-dialog button{cursor:pointer}
+.ym-catalog-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ym-catalog-heading h3{margin:2px 0 7px;font-size:clamp(18px,2.3vw,24px);color:var(--text)}
+.ym-catalog-heading p{font-size:12px;line-height:1.9;color:var(--muted);margin:0 0 14px}
+.ym-catalog-heading>small{border:1px solid var(--border);border-radius:18px;padding:6px 10px;color:var(--muted);white-space:nowrap;font-size:11px}
+.ym-catalog-search{margin:4px 0 13px}
+.ym-catalog-search>label{display:block;color:var(--text);font-size:12px;font-weight:700;margin:0 0 6px}
+.ym-catalog-search>div{display:flex;gap:8px}
+.ym-catalog-search input{flex:1;min-width:0;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:11px 13px}
+.ym-catalog-search .btn{min-width:80px}
+.ym-catalog-controls{display:grid;grid-template-columns:2fr 1.3fr 1.3fr;gap:8px;margin:12px 0}
+.ym-catalog-controls label{font-size:11px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:5px;min-width:0}
+.ym-catalog-controls select{width:100%;min-width:0;max-width:100%;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);padding:9px;font-size:12px}
+.ym-catalog-categories{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0}
+.ym-catalog-categories button{border-radius:20px;font-size:11px;padding:6px 11px;border:1px solid var(--border);background:var(--panel2,var(--surface));color:var(--text)}
+.ym-catalog-categories button.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:800}
+.ym-catalog-categories button[data-catalog-expand]{border-style:dashed;color:var(--accent);font-weight:800}
+.ym-catalog-results-title{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:18px 0 12px}
+.ym-catalog-results-title h4{margin:0;font-size:16px;color:var(--text)}
+.ym-catalog-results-title span{font-size:11px;color:var(--muted)}
+.ym-catalog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.ym-catalog-card{min-width:0;border:1px solid var(--border);border-radius:13px;background:var(--panel2,var(--surface));padding:12px;display:flex;flex-direction:column}
+.ym-catalog-open{display:flex;text-align:start;align-items:flex-start;gap:10px;width:100%;background:none;border:0;padding:0;color:var(--text);font:inherit;min-height:150px}
+.ym-catalog-open:hover .ym-catalog-book-info>b{text-decoration:underline}
+.ym-catalog-cover{width:72px;height:108px;flex:0 0 72px;border-radius:7px;background:var(--accent-faint);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:32px}
+.ym-catalog-cover img{width:100%;height:100%;object-fit:cover}
+.ym-catalog-book-info{min-width:0;display:flex;flex-direction:column;gap:7px;line-height:1.55;align-items:flex-start}
+.ym-catalog-book-info b{font-size:13px;overflow-wrap:anywhere;line-height:1.5}
+.ym-catalog-book-info small{font-size:11px;color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
+.ym-catalog-rating{font-size:11px;color:var(--accent);font-weight:800}
+.ym-catalog-foot{border-top:1px solid var(--border);margin-top:auto;padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:var(--muted)}
+.ym-catalog-foot button{border:1px solid var(--border);border-radius:8px;padding:7px 9px;background:var(--surface);color:var(--text);font-size:11px;font-weight:800}
+.ym-catalog-foot button:hover{border-color:var(--accent)}
+.ym-catalog-disclaimer{font-size:10px;line-height:1.9;color:var(--muted);margin:15px 0 0}
+.ym-catalog-warning{padding:11px;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:12px}
+.ym-catalog-warning button{font-weight:800;background:none;border:0;color:var(--accent)}
+.ym-catalog-more{display:block;margin:12px auto}
+.ym-catalog-skeleton{min-height:125px;border:1px dashed var(--border);border-radius:13px;display:grid;place-items:center;color:var(--muted);font-size:12px}
+.ym-catalog-dialog{position:fixed;inset:0;margin:auto;border:1px solid var(--border);border-radius:17px;background:var(--panel,var(--surface));color:var(--text);max-width:min(750px,94vw);max-height:87dvh;padding:24px;overflow:auto;box-shadow:0 20px 70px rgba(0,0,0,.27)}
+.ym-catalog-dialog::backdrop{background:rgba(0,0,0,.65)}
+.ym-catalog-close{position:absolute;top:7px;left:8px;border:0;background:var(--panel2,var(--surface));color:var(--text);border-radius:50%;width:33px;height:33px;font-size:18px}
+.ym-catalog-detail-layout{display:grid;grid-template-columns:140px minmax(0,1fr);gap:18px;padding-top:10px}
+.ym-catalog-detail-image{min-height:180px;display:flex;align-items:flex-start;justify-content:center;color:var(--accent);font-size:50px}
+.ym-catalog-detail-image img{width:140px;max-height:205px;object-fit:contain;border-radius:10px}
+.ym-catalog-detail-layout h2{font-size:21px;line-height:1.6;margin:0 0 12px}
+.ym-catalog-detail-layout h3{font-size:15px;margin:15px 0 7px}
+.ym-catalog-detail-layout p{font-size:12px;line-height:1.95;margin:6px 0}
+.ym-catalog-description{max-height:245px;overflow:auto;padding:12px;background:var(--panel2,var(--surface));border-radius:10px;white-space:pre-line}
+.ym-catalog-detail-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:16px 0}
+.ym-catalog-detail-actions a{font-size:12px;color:var(--accent);font-weight:800}
+.ym-catalog-detail-actions .btn{font-size:12px}
+@media(max-width:680px){.ym-catalog-controls{grid-template-columns:1fr 1fr}.ym-catalog-controls label:first-child{grid-column:span 2}.ym-catalog-grid{grid-template-columns:1fr 1fr;gap:8px}.ym-catalog-card{padding:9px}.ym-catalog-open{display:block;min-height:0}.ym-catalog-cover{height:118px;width:80px;margin:0 auto 8px}.ym-catalog-book-info{gap:5px}.ym-catalog-detail-layout{grid-template-columns:1fr}.ym-catalog-detail-image img{width:105px;max-height:152px}.ym-catalog-dialog{padding:17px}.ym-catalog-search>div{gap:5px}.ym-catalog-search .btn{min-width:61px}}
+@media(max-width:365px){.ym-catalog-grid{grid-template-columns:1fr}.ym-catalog-open{display:flex}.ym-catalog-cover{margin:0}}
