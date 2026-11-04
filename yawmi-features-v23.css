@@ -1,16 +1,13 @@
-/* YAWMI V23 — lightweight product enhancements; native themes retain their own palettes. */
+/* YAWMI V24 — focus linkage and weekly quests in Journey; native themes retain their own palettes. */
 #ymEnhancementsHome{display:grid;gap:14px;margin:15px 0 22px}
-.ym-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .ym-feature-panel{background:var(--surface,var(--panel));border:1px solid var(--border);border-radius:17px;padding:17px;min-width:0;box-shadow:0 6px 20px rgba(0,0,0,.04)}
 .ym-section-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:12px}
 .ym-section-head h3{margin:2px 0 0!important;font-size:17px}
 .ym-section-head small{color:var(--muted);font-size:10px;font-weight:800}
 .ym-section-head>b{color:var(--accent);font-size:29px;letter-spacing:2px;font-variant-numeric:tabular-nums}
-.ym-quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.ym-quick-grid button{border:1px solid var(--border);background:var(--panel2,var(--surface));border-radius:12px;color:var(--text);font-size:20px;padding:12px 6px;min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-.ym-quick-grid button b{font-size:11px;font-weight:800}
-.ym-quick-grid button:hover{border-color:var(--accent)}
-.ym-focus-fields{display:grid;grid-template-columns:1fr 1.4fr;gap:10px}
+.ym-focus-fields{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1.4fr);gap:10px}
+.ym-focus-fields [hidden]{display:none!important}
+.ym-weekly-journey{margin:16px 0}
 .ym-focus-fields label{font-size:11px;color:var(--muted);font-weight:800}
 .ym-focus-fields select{display:block;width:100%;min-width:0;margin-top:5px;padding:8px}
 .ym-focus-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 8px}
@@ -44,5 +41,5 @@
 .ym-onboard .ym-onboard-goal{width:100%;padding:12px;border:1px solid #ddd1ec;border-radius:10px;color:#252238;background:#fff}
 .ym-onboard .ym-onboard-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}
 .ym-onboard button{border:0;border-radius:10px;padding:11px 16px;font:900 12px Cairo,Tahoma,sans-serif}.ym-onboard .primary{background:#8063d9;color:#fff}.ym-onboard .soft{background:#ece7f4;color:#544b78}
-@media(max-width:890px){.ym-feature-grid{grid-template-columns:1fr}.ym-quest-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:570px){.ym-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-quest-grid{grid-template-columns:1fr}.ym-review-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-focus-fields{grid-template-columns:1fr}.ym-onboard .ym-choices{grid-template-columns:1fr}.ym-feature-panel{padding:13px}#ymSyncMini{font-size:9px;min-width:74px;padding:5px}}
+@media(max-width:890px){.ym-focus-fields{grid-template-columns:1fr 1fr}.ym-quest-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:570px){.ym-quest-grid{grid-template-columns:1fr}.ym-review-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-focus-fields{grid-template-columns:1fr}.ym-onboard .ym-choices{grid-template-columns:1fr}.ym-feature-panel{padding:13px}#ymSyncMini{font-size:9px;min-width:74px;padding:5px}}
