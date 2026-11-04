@@ -14,7 +14,7 @@ side.innerHTML='<header class="ym-menu-head"><div><b>يومي LifeOS</b><small>�
 +'<label class="ym-menu-label">الوضع</label><div class="ym-seg"><button data-yam-mode="light">☀ فاتح</button><button data-yam-mode="dark">☾ داكن</button><button data-yam-mode="auto">◐ تلقائي</button></div>'
 +'<button class="ym-menu-link" data-yam-action="goals">🎯 <span>أهدافي وكورساتي ومشاريعي</span></button><button class="ym-menu-link" data-yam-action="install">📲 <span>تثبيت التطبيق</span></button><button class="ym-menu-link" data-yam-action="settings">⚙️ <span>الإعدادات</span></button><button class="ym-menu-link" data-yam-action="home">⌂ <span>الرئيسية</span></button>'
 +'<p id="ymInstallHelp" class="ym-help" hidden>على أندرويد افتح Chrome ثم ⋮ ثم «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».</p></div>';
-document.body.append(shade,side);
+document.body.append(shade,side);window.YawmiInstall?.refresh();window.YawmiInstall?.checkInstalled();
 const close=()=>{side.hidden=true;shade.hidden=true;document.body.classList.remove('ym-menu-open')};
 const open=()=>{const name=String(api()?.getState()?.profile?.name||'المستخدم');$('ymMenuIdentity').textContent='👤 '+name+' · حسابك الشخصي';$('ymSkin').value=$('skinSwitch').value;document.querySelectorAll('[data-yam-mode]').forEach(b=>b.classList.toggle('is-selected',b.dataset.yamMode===api().getState().theme.mode));side.hidden=false;shade.hidden=false;document.body.classList.add('ym-menu-open');$('ymClose').focus()};
 $('yawmiMenuBtn').addEventListener('click',open);$('ymClose').addEventListener('click',close);shade.addEventListener('click',close);document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!side.hidden)close()});
