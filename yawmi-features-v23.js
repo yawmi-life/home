@@ -43,7 +43,7 @@ for(const claim of claims.filter(x=>x.date===day)){
 }
 return {xp,coins};
 }
-let focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',targetType:'general',finished:false},timer=null,undoFn=null,undoTimer=null,openedOnboard=false,reviewWeek=weekStart(date()),initDone=false,lastAccountId=null;
+let focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',targetType:'general',finished:false,sessionId:''},timer=null,undoFn=null,undoTimer=null,openedOnboard=false,reviewWeek=weekStart(date()),initDone=false,lastAccountId=null;
 function focusTargets(type){
  const s=S()||{};
  if(type==='habit')return (s.habits||[]).filter(h=>h.active!==false);
@@ -61,8 +61,27 @@ function updateFocusTarget(){
  if(items.some(item=>String(item.id)===String(focus.goal)))select.value=focus.goal;
  else {focus.goal='';select.value=''}
 }
+const focusStoreKey=()=>{const u=window.YawmiCloud?.currentUser?.id;return u?'yawmi_focus_v1_'+u:null};
+function saveFocusState(){
+ const key=focusStoreKey();if(!key)return;
+ try{localStorage.setItem(key,JSON.stringify({...focus,updatedAt:Date.now()}))}catch(_){}
+}
+function restoreFocusState(){
+ const key=focusStoreKey();if(!key)return;
+ try{
+  const f=JSON.parse(localStorage.getItem(key)||'null');
+  if(!f||!Number.isFinite(Number(f.minutes))||Number(f.minutes)<5||Number(f.minutes)>60)return;
+  if(Date.now()-Number(f.updatedAt||0)>7*86400000)return;
+  const remaining=Number(f.remaining);
+  focus={running:!!f.running,endAt:Number(f.endAt)||0,
+   remaining:Number.isFinite(remaining)?Math.max(0,Math.min(3600,remaining)):f.minutes*60,
+   minutes:Number(f.minutes),goal:String(f.goal||''),targetType:['general','habit','task','goal'].includes(f.targetType)?f.targetType:'general',
+   finished:!!f.finished,sessionId:String(f.sessionId||'')};
+  if(focus.running&&focus.endAt<=Date.now()){focus.running=false;focus.remaining=0;focus.finished=true;saveFocusState();}
+ }catch(_){}
+}
 function focusTime(){return focus.running?Math.max(0,Math.ceil((focus.endAt-Date.now())/1000)):Math.max(0,Math.ceil(focus.remaining))}
-function tick(){if(focus.running&&focusTime()<=0){focus.running=false;focus.remaining=0;focus.finished=true;}const timerEl=$('ymFocusClock');if(timerEl){const remain=focusTime();timerEl.textContent=String(Math.floor(remain/60)).padStart(2,'0')+':'+String(remain%60).padStart(2,'0');}const complete=$('ymFocusFinish');if(complete)complete.hidden=!focus.finished;const start=$('ymFocusStart');if(start)start.textContent=focus.running?'إيقاف مؤقت':focus.remaining<focus.minutes*60?'استكمال':'ابدأ التركيز'}
+function tick(){if(focus.running&&focusTime()<=0){focus.running=false;focus.remaining=0;focus.finished=true;saveFocusState();}const timerEl=$('ymFocusClock');if(timerEl){const remain=focusTime();timerEl.textContent=String(Math.floor(remain/60)).padStart(2,'0')+':'+String(remain%60).padStart(2,'0');}const complete=$('ymFocusFinish');if(complete)complete.hidden=!focus.finished;const start=$('ymFocusStart');if(start)start.textContent=focus.running?'إيقاف مؤقت':focus.remaining<focus.minutes*60?'استكمال':'ابدأ التركيز'}
 function focusStart(){
  if(focus.finished){api().notify('احفظ الجلسة المكتملة أو ابدأ جلسة جديدة');return}
  if(focus.running){focus.remaining=focusTime();focus.running=false}
@@ -71,27 +90,29 @@ function focusStart(){
    focus.minutes=Math.max(5,Math.min(60,whole($('ymFocusMinutes')?.value)||25));focus.remaining=focus.minutes*60;
    focus.targetType=$('ymFocusType')?.value||'general';
    focus.goal=focus.targetType==='general'?'':$('ymFocusGoal')?.value||'';
+   focus.sessionId=focus.sessionId||api().uid();
    if(focus.targetType!=='general'&&!focus.goal){api().notify('اختار '+focusTypeName(focus.targetType)+' قبل بدء الجلسة');return}
   }
   focus.endAt=Date.now()+focus.remaining*1000;focus.running=true;
  }
- tick();
+ saveFocusState();tick();
  const locked=focus.running||focus.finished||focus.remaining<focus.minutes*60;
  for(const id of ['ymFocusMinutes','ymFocusType','ymFocusGoal'])if($(id))$(id).disabled=locked;
 }
-function focusReset(){if(focus.running||focus.finished||focus.remaining<focus.minutes*60){if(!confirm('تصفير المؤقت الحالي دون احتساب XP؟'))return}focus.running=false;focus.finished=false;focus.remaining=focus.minutes*60;renderFocus()}
+function focusReset(){if(focus.running||focus.finished||focus.remaining<focus.minutes*60){if(!confirm('تصفير المؤقت الحالي دون احتساب XP؟'))return}focus.running=false;focus.finished=false;focus.remaining=focus.minutes*60;focus.goal='';focus.targetType='general';focus.sessionId='';saveFocusState();renderFocus()}
 function finishFocus(){
  tick();if(!focus.finished)return;
  const s=S();if(!s)return;
  const kind=focus.targetType||'general',ref=focus.goal||null;
  const target=focusTargets(kind).find(item=>String(item.id)===String(ref));
- const entry={id:api().uid(),date:date(),minutes:focus.minutes,goalId:kind==='goal'?ref:null,linkType:kind,linkId:kind==='general'?null:ref,linkTitle:target?.title||null,at:new Date().toISOString()};
+ const entry={id:focus.sessionId||api().uid(),date:date(),minutes:focus.minutes,goalId:kind==='goal'?ref:null,linkType:kind,linkId:kind==='general'?null:ref,linkTitle:target?.title||null,at:new Date().toISOString()};
  if(!Array.isArray(s.focusSessions))s.focusSessions=[];
+ if(s.focusSessions.some(x=>x.id===entry.id)){focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',targetType:'general',finished:false,sessionId:''};saveFocusState();renderFocus();return}
  s.focusSessions.push(entry);
  if(!s.daily[entry.date])s.daily[entry.date]={habits:{},tasks:{},water:0,mood:0,note:''};
  api().activity('focus','أنهيت '+entry.minutes+' دقيقة تركيز'+(entry.linkTitle?' على '+entry.linkTitle:''),entry.date);
- focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',targetType:'general',finished:false};
- api().save();api().render();api().notify('جلسة تركيز مكتملة ✦');
+ focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',targetType:'general',finished:false,sessionId:''};
+ saveFocusState();api().save();api().render();api().notify('جلسة تركيز مكتملة ✦');
 }
 function deleteFocus(id){
  const s=S(),f=focusRows().find(x=>x.id===id);if(!f||!confirm('حذف جلسة التركيز هذه؟ ستنخفض نقاط XP وأي تحديات لم تعد مكتملة.'))return;
@@ -197,7 +218,8 @@ function onAccountReady(){
  const userId=window.YawmiCloud.currentUser?.id||null;
  if(userId&&userId!==lastAccountId){
   lastAccountId=userId;
-  focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',targetType:'general',finished:false};
+  focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',targetType:'general',finished:false,sessionId:''};
+  restoreFocusState();
   openedOnboard=false;
   undoFn=null;if($('ymUndoBar'))$('ymUndoBar').hidden=true;clearTimeout(undoTimer);
  }
@@ -210,9 +232,9 @@ function wire(){
  $('ymOnboardSkip')?.addEventListener('click',()=>applyOnboard(true));
  $('ymUndoAction')?.addEventListener('click',doUndo);
  document.addEventListener('change',e=>{
-  if(e.target.id==='ymFocusMinutes'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60){focus.minutes=whole(e.target.value)||25;focus.remaining=focus.minutes*60;tick()}
-  if(e.target.id==='ymFocusType'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60){focus.targetType=e.target.value;focus.goal='';updateFocusTarget()}
-  if(e.target.id==='ymFocusGoal'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60)focus.goal=e.target.value;
+  if(e.target.id==='ymFocusMinutes'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60){focus.minutes=whole(e.target.value)||25;focus.remaining=focus.minutes*60;saveFocusState();tick()}
+  if(e.target.id==='ymFocusType'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60){focus.targetType=e.target.value;focus.goal='';saveFocusState();updateFocusTarget()}
+  if(e.target.id==='ymFocusGoal'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60){focus.goal=e.target.value;saveFocusState()}
   if(e.target.id==='ymReviewWeek'){reviewWeek=e.target.value;renderReview();}
  });
  document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
@@ -226,6 +248,9 @@ function wire(){
  render();
  if(window.YawmiCloud?.ready)onAccountReady();
 }
-window.YawmiFeatures={render,onAccountReady,weeklyBonus,focusXP,weekStats,offerUndo};
+window.YawmiFeatures={render,onAccountReady,weeklyBonus,focusXP,weekStats,offerUndo,onSignedOut(){
+ const key=focusStoreKey();if(key)try{localStorage.removeItem(key)}catch(_){}
+ focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',targetType:'general',finished:false,sessionId:''};lastAccountId=null;render();
+}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();
 })();
