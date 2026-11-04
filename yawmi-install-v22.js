@@ -1,7 +1,7 @@
 /* YAWMI V23 — show installation UI only when installation is not confirmed. */
 (()=>{'use strict';
 let deferredPrompt=null,installedThisVisit=false,relatedInstalled=false,checkInFlight=null;
-const standalone=()=>Boolean(window.matchMedia?.('(display-mode: standalone)').matches||window.matchMedia?.('(display-mode: fullscreen)').matches||navigator.standalone===true);
+const standalone=()=>Boolean(window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true);
 const installed=()=>standalone()||installedThisVisit||relatedInstalled;
 const setVisible=(id,show)=>{const el=document.getElementById(id);if(!el)return;el.hidden=!show;};
 const platformHelp=()=>{
@@ -26,7 +26,7 @@ async function checkInstalled(){
  if(typeof navigator.getInstalledRelatedApps!=='function')return refresh();
  if(checkInFlight)return checkInFlight;
  checkInFlight=Promise.resolve().then(()=>navigator.getInstalledRelatedApps()).then(apps=>{
-   relatedInstalled=Array.isArray(apps)&&apps.some(app=>app.platform==='webapp'&&(String(app.url||'').includes('/home/manifest.webmanifest')||String(app.id||'').includes('/home/index.html')||!app.url));
+   relatedInstalled=Array.isArray(apps)&&apps.some(app=>app.platform==='webapp'&&(String(app.url||'').includes('/home/manifest.webmanifest')||String(app.id||'').includes('/home/index.html')));
  }).catch(()=>{}).finally(()=>{checkInFlight=null;refresh();});
  return checkInFlight;
 }
