@@ -38,8 +38,8 @@ function render(){
  +'<p>معرّف حسابك العلني: <b dir="ltr">'+escape(p.code||'—')+'</b> <button type="button" class="ym-small-btn" data-league-copy>نسخ</button></p>'
  +'<label>اسم العرض في المنافسة <input id="ymLeagueName" maxlength="32" value="'+escape(p.name||'المستكشف')+'"></label>'
  +'<label class="ym-league-check"><input type="checkbox" id="ymLeagueVisible" '+(p.visible?'checked':'')+'> إظهار اسمي ونقاطي في الليدر بورد</label>'
- +'<label class="ym-league-check"><input type="checkbox" id="ymLeagueFriends" '+(p.friends_enabled?'checked':'')+'> السماح بطلبات الصداقة</label>'
- +'<button type="button" class="btn" data-league-save>حفظ إعدادات الخصوصية</button><p class="muted mini">بريدك ومهامك وعاداتك لا تظهر للمستخدمين الآخرين. يمكنك إخفاء حسابك في أي وقت.</p></details>'
+ +'<label class="ym-league-check"><input type="checkbox" id="ymLeagueFriends" '+(p.friends_enabled?'checked':'')+'> السماح بطلبات الصداقة وعرض نقاطي للأصدقاء المقبولين</label>'
+ +'<button type="button" class="btn" data-league-save>حفظ إعدادات الخصوصية</button><p class="muted mini">البريد ومحتوى مهامك وعاداتك يظل خاصًا. الظهور العام مطلوب للمنافسة على ميداليات أول ثلاثة، وتقدر تخفي حسابك في أي وقت.</p></details>'
  +'<details class="ym-league-details"><summary>🤝 الأصدقاء وطلبات الإضافة ('+req.length+')</summary>'
  +'<div class="ym-friend-add"><input id="ymFriendCode" placeholder="YM-XXXXXXXXXX" maxlength="20" dir="ltr" aria-label="معرف صديق"><button type="button" class="btn soft" data-league-add>إرسال طلب</button></div>'
  +(req.length?'<h4>طلبات واردة</h4>'+req.map(r=>'<div class="ym-friend-request"><b>'+escape(r.name)+' · '+escape(r.code)+'</b><button type="button" data-league-respond="'+escape(r.code)+'" data-answer="yes">قبول</button><button type="button" data-league-respond="'+escape(r.code)+'" data-answer="no">رفض</button></div>').join(''):'<p class="muted mini">لا توجد طلبات واردة.</p>')
@@ -48,7 +48,7 @@ function render(){
  +(questArchive.length?'<div class="ym-quest-medals">'+questArchive.map(q=>'<span>🏅 '+escape(q.season)+' · '+escape(({starter:'البداية القوية',steady:'الثبات الذهبي',legend:'أسطورة الموسم'})[q.quest]||q.quest)+'</span>').join('')+'</div>':'')
  +(awards.length?awards.map(a=>'<div><span>'+medal(a.medal)+' '+escape(a.season)+' · '+escape(a.rank)+'</span><b>'+format(a.xp)+' XP</b><small>'+(a.position?'المركز '+format(a.position):'موسم مكتمل')+'</small></div>').join(''):'<p class="muted mini">أوسمة الموسم الأول تُحفظ هنا بعد نهايته. الأرشيف دائم ولا يُصفّر.</p>')+'</div>'
  +(toast?'<p class="ym-league-toast" role="status">'+escape(toast)+'</p>':'')
- +'<p class="muted mini">نقاط المنافسة معتمدة من الخادم، وقد تتأخر الإنجازات غير المتزامنة. الترتيب لا يثبت إتمام كل نشاط فعليًا.</p>';
+ +'<p class="muted mini">XP الموسم منفصل عن XP الشخصي، ويُحسب من المهام والعادات والتركيز المسجل بسقف يومي. الإنجازات الأوفلاين تظهر بعد المزامنة. الترتيب لا يثبت أداء النشاط خارج التطبيق.</p>';
  if(window.YawmiRank&&app()?.getScores)window.YawmiRank.render(app().getScores());
 }
 async function refresh(force=false){
