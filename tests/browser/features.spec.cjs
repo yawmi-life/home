@@ -42,6 +42,8 @@ test('all three app skins contain analytics and social sections',async({page})=>
   await expect(page.locator('#ymChallengesPanel')).toHaveCount(1);
   await expect(page.locator('#ymSeasonPanel')).toHaveCount(1);
   await expect(page.locator('#ymHistoryPanel')).toHaveCount(0);
+  await expect(page.locator('#ymBookCatalog')).toHaveCount(1);
+  await expect(page.locator('#ymBookAuthor')).toHaveCount(1);
  }
 });
 
