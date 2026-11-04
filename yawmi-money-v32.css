@@ -28,7 +28,7 @@
 .ym-money-section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .ym-money-section-title h3{font-size:17px;line-height:1.5;margin:0;color:var(--text)}
 .ym-money-section-title small{color:var(--muted);font-size:11px}
-.ym-money-section-title .ym-money-link{background:var(--accent-faint,rgba(140,130,240,.12));color:var(--accent);border:1px solid var(--border);border-radius:10px;font-weight:800;padding:8px 10px;font-size:11px}
+.ym-money-section-title .ym-money-link{background:var(--accent-faint,rgba(140,130,240,.12));color:var(--text);border:1px solid var(--border);border-radius:10px;font-weight:800;padding:8px 10px;font-size:11px}
 .ym-money-accounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 .ym-money-account{display:flex;flex-direction:column;gap:5px;min-width:0;padding:12px 9px;border:1px solid var(--border);border-radius:13px;background:var(--surface,var(--panel))}
 .ym-money-account-emoji{font-size:23px}
