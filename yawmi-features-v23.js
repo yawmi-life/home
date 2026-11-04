@@ -43,7 +43,7 @@ for(const claim of claims.filter(x=>x.date===day)){
 }
 return {xp,coins};
 }
-let focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',finished:false},timer=null,undoFn=null,undoTimer=null,openedOnboard=false,reviewWeek=weekStart(date()),initDone=false;
+let focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',finished:false},timer=null,undoFn=null,undoTimer=null,openedOnboard=false,reviewWeek=weekStart(date()),initDone=false,lastAccountId=null;
 function focusTime(){return focus.running?Math.max(0,Math.ceil((focus.endAt-Date.now())/1000)):Math.max(0,Math.ceil(focus.remaining))}
 function tick(){if(focus.running&&focusTime()<=0){focus.running=false;focus.remaining=0;focus.finished=true;}const timerEl=$('ymFocusClock');if(timerEl){const remain=focusTime();timerEl.textContent=String(Math.floor(remain/60)).padStart(2,'0')+':'+String(remain%60).padStart(2,'0');}const complete=$('ymFocusFinish');if(complete)complete.hidden=!focus.finished;const start=$('ymFocusStart');if(start)start.textContent=focus.running?'إيقاف مؤقت':focus.remaining<focus.minutes*60?'استكمال':'ابدأ التركيز'}
 function focusStart(){
@@ -171,7 +171,15 @@ function navigateShortcut(){
  if(value==='focus'||value==='water'){api().goHome();const target=$(value==='focus'?'ymFocusPanel':'waterGlasses');target?.scrollIntoView({behavior:'smooth',block:'center'});}
 }
 function onAccountReady(){
- if(!window.YawmiCloud?.ready)return;render();showOnboard();navigateShortcut();
+ if(!window.YawmiCloud?.ready)return;
+ const userId=window.YawmiCloud.currentUser?.id||null;
+ if(userId&&userId!==lastAccountId){
+  lastAccountId=userId;
+  focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',finished:false};
+  openedOnboard=false;
+  undoFn=null;if($('ymUndoBar'))$('ymUndoBar').hidden=true;clearTimeout(undoTimer);
+ }
+ render();showOnboard();navigateShortcut();
 }
 function render(){renderFocus();renderChallenges();renderReview();renderQuick()}
 function wire(){
