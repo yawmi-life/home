@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id),api=()=>window.YawmiExtraAPI;
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const currencies=['SAR','EGP','USD','AED','EUR','KWD','QAR','BHD','OMR'];
+const currencies=['SAR','EGP','USD','AED','EUR','QAR','GBP','CAD'];
 const expenses=[['food','🍽️','مطاعم وطعام'],['groceries','🛒','بقالة ومشتريات'],['home','🏠','سكن وإيجار'],['bills','💡','فواتير واشتراكات'],['transport','🚗','مواصلات'],['shopping','🛍️','تسوّق'],['health','🩺','صحة'],['education','🎓','تعليم'],['fun','🎮','ترفيه'],['family','💝','عائلة وهدايا'],['travel','✈️','سفر'],['business','💼','أعمال'],['other','🧾','أخرى']];
 const incomes=[['salary','💰','راتب'],['freelance','🧑‍💻','عمل حر'],['sales','📈','مبيعات'],['investment','🌱','عوائد استثمار'],['gift','🎁','هدية أو مكافأة'],['refund','↩️','استرداد'],['other_income','✨','دخل آخر']];
 const labels={income:'دخل',expense:'مصروف',transfer:'تحويل'};
