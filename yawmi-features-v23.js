@@ -76,8 +76,10 @@ function focusStart(){
   focus.endAt=Date.now()+focus.remaining*1000;focus.running=true;
  }
  tick();
+ const locked=focus.running||focus.finished||focus.remaining<focus.minutes*60;
+ for(const id of ['ymFocusMinutes','ymFocusType','ymFocusGoal'])if($(id))$(id).disabled=locked;
 }
-function focusReset(){if(focus.running||focus.finished||focus.remaining<focus.minutes*60){if(!confirm('تصفير المؤقت الحالي دون احتساب XP؟'))return}focus.running=false;focus.finished=false;focus.remaining=focus.minutes*60;tick()}
+function focusReset(){if(focus.running||focus.finished||focus.remaining<focus.minutes*60){if(!confirm('تصفير المؤقت الحالي دون احتساب XP؟'))return}focus.running=false;focus.finished=false;focus.remaining=focus.minutes*60;renderFocus()}
 function finishFocus(){
  tick();if(!focus.finished)return;
  const s=S();if(!s)return;
@@ -98,7 +100,7 @@ function deleteFocus(id){
 }
 function renderFocus(){
  const box=$('ymFocusPanel');if(!box||!S())return;
- const locked=focus.running||focus.finished,disabled=locked?'disabled':'';
+ const locked=focus.running||focus.finished||focus.remaining<focus.minutes*60,disabled=locked?'disabled':'';
  box.innerHTML='<div class="ym-section-head"><div><small>FOCUS SESSION</small><h3>⏳ جلسة تركيز</h3></div><b id="ymFocusClock">25:00</b></div>'
  +'<div class="ym-focus-fields"><label>المدة<select id="ymFocusMinutes" '+disabled+'><option value="25">25 دقيقة</option><option value="45">45 دقيقة</option><option value="15">15 دقيقة</option><option value="50">50 دقيقة</option></select></label>'
  +'<label>نوع الجلسة<select id="ymFocusType" '+disabled+'><option value="general">جلسة عامة</option><option value="habit">عادة</option><option value="task">مهمة</option><option value="goal">هدف أو مشروع</option></select></label>'
@@ -208,9 +210,9 @@ function wire(){
  $('ymOnboardSkip')?.addEventListener('click',()=>applyOnboard(true));
  $('ymUndoAction')?.addEventListener('click',doUndo);
  document.addEventListener('change',e=>{
-  if(e.target.id==='ymFocusMinutes'&&!focus.running&&!focus.finished){focus.minutes=whole(e.target.value)||25;focus.remaining=focus.minutes*60;tick()}
-  if(e.target.id==='ymFocusType'&&!focus.running&&!focus.finished){focus.targetType=e.target.value;focus.goal='';updateFocusTarget()}
-  if(e.target.id==='ymFocusGoal'&&!focus.running&&!focus.finished)focus.goal=e.target.value;
+  if(e.target.id==='ymFocusMinutes'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60){focus.minutes=whole(e.target.value)||25;focus.remaining=focus.minutes*60;tick()}
+  if(e.target.id==='ymFocusType'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60){focus.targetType=e.target.value;focus.goal='';updateFocusTarget()}
+  if(e.target.id==='ymFocusGoal'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60)focus.goal=e.target.value;
   if(e.target.id==='ymReviewWeek'){reviewWeek=e.target.value;renderReview();}
  });
  document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
