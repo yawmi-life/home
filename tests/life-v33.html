@@ -1,0 +1,40 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>اختبارات ميزات يومي V33</title>
+<link rel="stylesheet" href="../yawmi-life-v33.css">
+<style>:root{--accent:#5541a3;--accent-faint:#ede8ff;--text:#242135;--muted:#585666;--border:#d6d4e0;--panel:#fff;--surface:#fff}
+*{box-sizing:border-box}body{background:#f8f7fc;color:#242135;font:15px system-ui;margin:0 auto;max-width:1180px;padding:18px}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.btn{border:0;border-radius:10px;padding:11px;background:#5740a4;color:#fff}
+.page{display:block}.yl-root{margin-bottom:28px}.on{display:block}</style>
+</head><body><main><h1>يومي — اختبار الأقسام الجديدة</h1>
+<section id="page-calendar" class="page on"><div id="ymLifeCalendar" class="yl-root"></div></section>
+<section id="page-reminders" class="page"><div id="ymLifeReminders" class="yl-root"></div></section>
+<section id="page-notes" class="page"><div id="ymLifeNotes" class="yl-root"></div></section>
+<section id="page-health" class="page"><div id="ymLifeHealth" class="yl-root"></div></section>
+<section id="page-routines" class="page"><div id="ymLifeRoutines" class="yl-root"></div></section>
+<section id="page-planning" class="page"><div id="ymLifePlanning" class="yl-root"></div></section>
+<section id="page-coach" class="page"><div id="ymLifeCoach" class="yl-root"></div></section>
+<section id="page-privacy" class="page"><div id="ymLifePrivacy" class="yl-root"></div></section>
+<section id="page-money" class="page"><div id="ymMoneyApp"></div></section>
+<section id="page-diary" class="page"><div id="ymDiaryApp"></div></section></main>
+<script>
+const KEY='v33_test_state',stored=sessionStorage.getItem(KEY);
+window.__appState=stored?JSON.parse(stored):{version:7,profile:{name:'مُختبر'},tasks:[],habits:[],daily:{},goals:[],finance:{currency:'SAR',accounts:[],transactions:[],recurring:[],budgets:{}},
+ journalEntries:[],journalDraft:null};
+window.__saves=0;window.__notices=[];
+let counter=0;
+window.YawmiExtraAPI={
+ getState:()=>window.__appState,
+ save:()=>{window.__saves++;sessionStorage.setItem(KEY,JSON.stringify(window.__appState));return true},
+ today:()=>new Date().toISOString().slice(0,7)+'-05',
+ uid:()=>('fixture-'+(++counter)+'-'+Date.now()),
+ notify:text=>window.__notices.push(text),
+ getScores:()=>({xp:400,coins:15}),
+ render:()=>{window.YawmiLife?.privacyGate('money');window.YawmiLife?.privacyGate('diary')},
+ goPage:()=>{},
+};
+</script>
+<script src="../yawmi-life-core-v33.js"></script>
+<script src="../yawmi-life-growth-v33.js"></script>
+<script src="../yawmi-life-privacy-v33.js"></script>
+<script>document.addEventListener('DOMContentLoaded',()=>['calendar','reminders','notes','health','routines','planning','coach','privacy'].forEach(n=>window.YawmiLife.render(n)))</script>
+</body></html>
