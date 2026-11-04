@@ -29,3 +29,8 @@
 .ym-league-archive>div small{color:var(--muted)}
 .ym-league-toast{color:var(--accent);font-size:12px;font-weight:800}
 @media(max-width:650px){.ym-league-quest-grid{grid-template-columns:1fr}.ym-league-stats{gap:5px}.ym-league-stats strong{font-size:14px}.ym-league-stats small{font-size:9px}.ym-league-person{grid-template-columns:27px minmax(0,1fr) 75px;gap:6px;padding:9px 2px}.ym-league-person em{display:none}.ym-league-person strong{font-size:10px}}
+
+/* Private friend code is never rendered until the owner reveals it. */
+.ym-private-code{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 14px;padding:10px;border:1px solid var(--border);border-radius:12px}
+.ym-private-code>span{min-width:110px;padding:8px 12px;background:var(--panel2,var(--surface));border-radius:8px;font-family:monospace;direction:ltr;letter-spacing:.6px;user-select:text}
+.ym-private-code button{white-space:nowrap}
