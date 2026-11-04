@@ -16,7 +16,7 @@ const prompts=[
 const timeFmt=date=>{try{return new Intl.DateTimeFormat('ar-EG',{day:'numeric',month:'long',year:'numeric'}).format(new Date(date+'T12:00:00'))}catch(_){return date}};
 const monthText=m=>{try{return new Intl.DateTimeFormat('ar-EG',{month:'long',year:'numeric'}).format(new Date(m+'-01T12:00:00'))}catch(_){return m}};
 const today=()=>api()?.today?.()||new Date().toISOString().slice(0,10);
-const validDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x||''))&&new Date(x+'T12:00:00').toISOString().slice(0,10)===x;
+const validDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x||''))&&!Number.isNaN(Date.parse(x+'T12:00:00'))&&new Date(x+'T12:00:00').toISOString().slice(0,10)===x;
 const countWords=x=>(String(x||'').trim().match(/\S+/g)||[]).length;
 const moodOf=n=>moods.find(x=>x[0]===String(n||3))||moods[2];
 const normalizeTags=text=>[...new Set(String(text||'').split(/[,،؛]/).map(t=>t.trim().replace(/\s+/g,' ').slice(0,22)).filter(Boolean))].slice(0,8);
@@ -63,7 +63,7 @@ function calendar(){
  }
  return '<div class="ym-diary-calendar"><div class="ym-diary-calendar-head"><h3>تقويم الذكريات</h3><div>'+
  '<button type="button" data-diary-month="-1" aria-label="الشهر السابق">‹</button><b>'+esc(monthText(currentMonth))+'</b><button type="button" data-diary-month="1" aria-label="الشهر التالي">›</button></div></div>'+
- '<div class="ym-diary-calendar-grid" role="grid" aria-label="تقويم تدوينات '+esc(monthText(currentMonth))+'">'+
+ '<div class="ym-diary-calendar-grid" role="group" aria-label="تقويم تدوينات '+esc(monthText(currentMonth))+'">'+
  ['س','ح','ن','ث','ر','خ','ج'].map(x=>'<span class="weekday">'+x+'</span>').join('')+cells+'</div>'+
  (dateFilter?'<button type="button" class="ym-diary-clear-date" data-diary-clear-date>عرض كل الأيام ×</button>':'')+'</div>';
 }
