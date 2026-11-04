@@ -64,6 +64,7 @@ window.YawmiOffline={
  putPending:(uid,data,revision)=>operation(uid,'pending','put',{data:clone(data),base:Number(revision)||0,updatedAt:Date.now()}),
  getPending:uid=>operation(uid,'pending','get'),
  clearPending:uid=>operation(uid,'pending','delete'),
+ clearUser:async uid=>{await operation(uid,'pending','delete');await operation(uid,'confirmed','delete')},
  threeWay
 };
 })();
