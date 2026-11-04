@@ -26,6 +26,7 @@ let search='',moodFilter='all',onlyFavorites=false,view='timeline',dateFilter=''
 let draftTimer=null,draftStatus='مسودة غير محفوظة بعد',editing=false,selection='',note='';let latestState=null;
 function state(){
  const s=api()?.getState?.();if(!s)return null;
+ if(latestState!==s){latestState=s;search='';moodFilter='all';onlyFavorites=false;dateFilter='';currentMonth=today().slice(0,7);clearTimeout(draftTimer);}
  if(!Array.isArray(s.journalEntries))s.journalEntries=[];
  if(s.journalDraft&&!s.journalDraft.draftId)s.journalDraft=null;
  return s;
