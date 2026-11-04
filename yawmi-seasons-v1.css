@@ -1,0 +1,31 @@
+/* Seasonal league, shared by all YAWMI skins */
+.ym-season-shell{margin:15px 0!important;padding:18px!important;min-width:0}
+.ym-league-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ym-league-title h3{font-size:21px;margin:3px 0}.ym-league-title small{color:var(--accent);font-weight:900;font-size:10px}
+.ym-league-title p{font-size:11px;margin:0}.ym-league-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ym-league-stats>div{border:1px solid var(--border);background:var(--panel2,var(--surface));border-radius:13px;padding:13px;text-align:center}
+.ym-league-stats strong{display:block;font-size:21px;color:var(--text)}.ym-league-stats small{color:var(--muted);font-size:11px}
+.ym-league-progress{margin:14px 0 18px}.ym-league-progress small{font-size:11px;color:var(--muted)}
+.ym-league-quests{padding:12px;border:1px solid var(--border);border-radius:12px;margin:12px 0}
+.ym-league-quests h4,.ym-league-archive h4{margin:0 0 12px;font-size:15px}
+.ym-league-quest-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ym-league-quest-grid>div{display:flex;flex-direction:column;gap:5px;padding:10px;background:var(--panel2,var(--surface));border-radius:10px;font-size:11px}
+.ym-league-quest-grid b{color:var(--accent);font-size:11px}
+.ym-league-tabs{display:flex;gap:8px;margin:18px 0 12px}.ym-league-tabs button{background:transparent;color:var(--text);padding:8px 15px;border-radius:99px;border:1px solid var(--border);font-size:12px}
+.ym-league-tabs button.selected{background:var(--accent-faint);border-color:var(--accent)}
+.ym-league-list{max-height:440px;overflow:auto}.ym-league-person{display:grid;grid-template-columns:46px minmax(0,1fr) 93px 100px;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:12px 8px}
+.ym-league-person>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.ym-league-person small{font-size:10px;color:var(--muted)}
+.ym-league-person em{font-size:11px;font-style:normal;color:var(--muted)}.ym-league-person strong{font-size:12px;text-align:left}
+.ym-league-person.is-me{border-radius:9px;background:var(--accent-faint)}
+.ym-league-details{border:1px solid var(--border);border-radius:12px;padding:11px 15px;margin:12px 0}
+.ym-league-details summary{cursor:pointer;font-size:13px;font-weight:800}.ym-league-details label{display:block;font-size:11px;margin:10px 0}
+.ym-league-details input:not([type=checkbox]){width:100%;margin-top:5px}
+.ym-league-check{display:flex!important;align-items:center;gap:8px}.ym-league-check input{accent-color:var(--accent)}
+.ym-small-btn{border:1px solid var(--border);background:transparent;border-radius:7px;color:var(--text);font-size:11px;padding:4px 9px}
+.ym-friend-add{display:flex;gap:8px;margin:14px 0}.ym-friend-add input{flex:1;min-width:0}
+.ym-friend-request{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:10px;border-bottom:1px solid var(--border);font-size:12px}
+.ym-friend-request button{border:1px solid var(--border);background:var(--accent-faint);color:var(--text);border-radius:8px;padding:6px 10px}
+.ym-league-archive{padding:15px 0}.ym-league-archive>div{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding:9px 0;font-size:12px}.ym-league-archive>div span{flex:1}
+.ym-league-archive>div small{color:var(--muted)}
+.ym-league-toast{color:var(--accent);font-size:12px;font-weight:800}
+@media(max-width:650px){.ym-league-quest-grid{grid-template-columns:1fr}.ym-league-stats{gap:5px}.ym-league-stats strong{font-size:14px}.ym-league-stats small{font-size:9px}.ym-league-person{grid-template-columns:27px minmax(0,1fr) 75px;gap:6px;padding:9px 2px}.ym-league-person em{display:none}.ym-league-person strong{font-size:10px}}
