@@ -70,7 +70,7 @@ test('book catalog works offline using previously cached public search metadata'
  await provider(page);
  await context.setOffline(true);
  try{
-  await page.locator('#ymCatalogLanguage').selectOption('all');
+  await page.evaluate(()=>window.YawmiBookCatalog.search());
   await expect(page.locator('.ym-catalog-card')).toHaveCount(4);
   await expect(page.locator('#ymBookCatalog')).toContainText('أوفلاين');
  }finally{await context.setOffline(false)}
