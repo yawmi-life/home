@@ -54,6 +54,7 @@ test('failed save leaves onboarding open and restores all original starter recor
  await start(page);
  await only(page,'ymOnboardHabit',['sport']);
  await only(page,'ymOnboardTask',['t4']);
+ await page.locator('#ymOnboardGoal').fill('هدف لا يجب إضافته عند الفشل');
  await page.evaluate(()=>window.__failSave=true);
  await page.locator('#ymOnboardContinue').click();
  await expect(page.locator('#ymOnboard')).toBeVisible();
@@ -61,6 +62,7 @@ test('failed save leaves onboarding open and restores all original starter recor
  const state=await page.evaluate(()=>({tasks:window.__state.tasks.map(t=>t.id),active:window.__state.habits.every(h=>h.active),o:window.__state.onboarding}));
  expect(state.tasks).toEqual(['t1','t2','t3','t4']);
  expect(state.active).toBe(true);expect(state.o).toBeUndefined();
+ expect(await page.evaluate(()=>window.__state.goals.length)).toBe(0);
  await page.evaluate(()=>window.__failSave=false);
  await page.locator('#ymOnboardContinue').click();
  await expect(page.locator('#ymOnboard')).not.toBeVisible();
