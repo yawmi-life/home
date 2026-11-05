@@ -194,7 +194,7 @@ function dialogContent(b,about,done){
  '<p><b>تقييم القراء: </b>'+safe(rating(b))+'</p>'+
  '<p><b>اللغة: </b>'+safe(language(b))+(b.year?' · نشر أول مرة '+fmt(b.year):'')+'</p>'+
  '<h3>نبذة عن الكتاب</h3>'+
- (about&&(!b.googleId||lang!=='ar'||Arabic.test(about))?'<p class="ym-catalog-description">'+safe(about)+'</p>':
+ (about&&(!b.googleId||!(lang==='ar'||Arabic.test(keyword))||Arabic.test(about))?'<p class="ym-catalog-description">'+safe(about)+'</p>':
  '<p class="muted">'+(done?'لا توجد نبذة موثقة لهذا العنوان في المصدر. يمكنك مراجعة صفحة الكتاب.':'جاري جلب النبذة من المصدر…')+'</p>')+
  '<div class="ym-catalog-detail-actions"><button class="btn" type="button" data-catalog-save="'+safe(b.key)+'">＋ أضف لمكتبتي</button>'+
  '<a href="'+safe(externalBookUrl(b))+'" rel="noopener noreferrer" target="_blank">تفاصيل الطبعة من المصدر ↗</a></div>'+
