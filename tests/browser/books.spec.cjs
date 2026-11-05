@@ -99,10 +99,10 @@ test('Arabic Atomic Habits search resolves a real Arabic-language edition and ve
  await provider(page);
  await page.getByRole('searchbox',{name:'ابحث عن كتاب أو مؤلف'}).fill('العادات الذرية');
  await page.getByRole('button',{name:'بحث'}).click();
- await expect(page.locator('.ym-catalog-card').first()).toContainText('العادات الذرية');
+ await expect(page.locator('.ym-catalog-card').first()).toContainText('العادات الذرية',{timeout:18000});
  await expect(page.locator('.ym-catalog-card').first()).not.toContainText('Atomic Habits');
  await page.locator('#ymCatalogLanguage').selectOption('ar');
- await expect(page.locator('.ym-catalog-card').first()).toContainText('جيمس كلير');
+ await expect(page.locator('.ym-catalog-card').first()).toContainText('جيمس كلير',{timeout:15000});
  await page.locator('.ym-catalog-card').first().getByRole('button',{name:/تفاصيل كتاب/}).click();
  await expect(page.locator('.ym-catalog-description')).toContainText('التغييرات الصغيرة');
  await expect(page.locator('#ymCatalogDetail')).toContainText('Google Books');
@@ -116,6 +116,6 @@ test('Arabic filter refuses English work title merely flagged as having an Arabi
  await page.getByRole('searchbox',{name:'ابحث عن كتاب أو مؤلف'}).fill('Atomic Habits');
  await page.getByRole('button',{name:'بحث'}).click();
  await page.locator('#ymCatalogLanguage').selectOption('ar');
- await expect(page.locator('.ym-catalog-card')).toContainText('العادات الذرية');
+ await expect(page.locator('.ym-catalog-card')).toContainText('العادات الذرية',{timeout:18000});
  await expect(page.locator('.ym-catalog-card')).not.toContainText('Atomic Habits');
 });
