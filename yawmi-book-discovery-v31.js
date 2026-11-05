@@ -46,7 +46,7 @@ const language=b=>isRealArabic(b)?'طبعة وعنوان بالعربية':b.lan
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let cat='self',lang='all',sorting='relevance',keyword='',books=[],started=false,expanded=false,loading=false,error='',showCount=24,loadingMore=false,hasMorePages=true,pageNumber=0;
 let generation=0,nextSlot=0,controller=null,detailToken=0,activeDetail=null;
-const memory=new Map(),cacheName='yawmi_books_public_v35ar2';
+const memory=new Map(),cacheName='yawmi_books_public_v36isbn';
 function normalize(d){
  const key=workKey(d?.key),mainTitle=String(d?.title||'').trim();
  const editions=Array.isArray(d?.editions?.docs)?d.editions.docs:[];
@@ -98,7 +98,12 @@ async function json(url,signal){
   return await r.json();
  }finally{clearTimeout(end);signal?.removeEventListener('abort',forward)}
 }
+function isbnOf(q){
+ const n=String(q||'').replace(/[٠-٩]/g,x=>String(x.charCodeAt(0)-1632)).replace(/[۰-۹]/g,x=>String(x.charCodeAt(0)-1776)).replace(/[-\s]/g,'').toUpperCase();
+ return /^(?:\d{13}|\d{9}[\dX])$/.test(n)?n:'';
+}
 function queries(){
+ const isbn=isbnOf(keyword);if(isbn)return ['isbn:'+isbn];
  const subject=(cats.find(c=>c[0]===cat)||cats[0])[2],query=keyword.trim()||'subject:'+subject;
  if(lang==='ar')return [query+' AND language:ara'];
  if(lang==='foreign')return [query+' AND language:eng'];
@@ -106,12 +111,13 @@ function queries(){
 }
 function googleQueries(){
  const category=(cats.find(c=>c[0]===cat)||cats[0]),q=keyword.trim();
+ const isbn=isbnOf(q);if(isbn)return ['isbn:'+isbn];
  if(!q)return ['subject:'+category[2],...(lang==='ar'?[category[1]]:[])];
  const alias=aliasOf(q);return alias&&alias!==q?[q,alias]:[q];
 }
 async function search(force=false){
  const seq=++generation;controller?.abort();controller=new AbortController();
- const key=JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v35ar2']);
+ const key=JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v36isbn']);
  const existing=fromCache(key);showCount=24;error='';pageNumber=0;loadingMore=false;hasMorePages=true;
  if(!navigator.onLine){books=existing||[];started=true;loading=false;
   error=existing?'أوفلاين: دي نتائج بحث محفوظة من قبل.':'البحث عن كتب جديدة يحتاج اتصال بالإنترنت. كتبك المحفوظة متاحة بدون إنترنت.';render();return}
@@ -195,7 +201,7 @@ async function loadMore(){
   if(!old||(b.summary&&Arabic.test(b.summary)&&!(old.summary&&Arabic.test(old.summary))))merged.set(key,b);
  }
  books=[...merged.values()].map((b,i)=>({...b,index:i}));
- if(books.length)saveCache(JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v35ar2']),books);
+ if(books.length)saveCache(JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v36isbn']),books);
  if(anySuccess){pageNumber=page;hasMorePages=page<10&&extra.length>0;}
  else error='المصادر لم تستجب عند تحميل المزيد. تقدر تعيد المحاولة بعد شوية.';
  loadingMore=false;render();
@@ -310,7 +316,7 @@ function init(){
  window.addEventListener('online',()=>{if(started&&error)search(true)});
  if($('page-books')?.classList.contains('active'))visible();
 }
-window.YawmiBookCatalog={render,visible,search,loadMore,normalize,googleBook,isRealArabic,aliasOf,order,categoryCount:cats.length,
+window.YawmiBookCatalog={render,visible,search,loadMore,normalize,googleBook,isRealArabic,aliasOf,isbnOf,order,categoryCount:cats.length,
  getState:()=>({cat,lang,sorting,loaded:started,books:books.length,loading})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
