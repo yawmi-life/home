@@ -19,6 +19,7 @@ const hasNumber=x=>typeof x==='number'&&Number.isSafeInteger(x);
 const clampCents=x=>hasNumber(x)&&Math.abs(x)<100000000000?x:0;
 const amountInput=x=>Number.isFinite(Number(x))&&Number(x)>=0&&Number(x)<1e9?Math.round(Number(x)*100):null;
 const cleanAmount=s=>{const v=String(s??'').trim().replace(',','.');if(!/^\d{1,9}(\.\d{1,2})?$/.test(v))return null;return amountInput(v)};
+const cleanSignedAmount=s=>{const v=String(s??'').trim().replace(',','.');if(!/^-?\d{1,9}(\.\d{1,2})?$/.test(v))return null;const c=cleanAmount(v.replace(/^-/,'').trim());return c===null?null:(v.startsWith('-')?-c:c)};
 const safeDay=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))&&!Number.isNaN(Date.parse(s+'T12:00:00'))&&new Date(s+'T12:00:00').toISOString().slice(0,10)===s;
 const money=(n,c='SAR')=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:c,maximumFractionDigits:2,minimumFractionDigits:2}).format(clampCents(n)/100);
 function ensure(){
@@ -31,6 +32,7 @@ function ensure(){
  if(!f.budgets||typeof f.budgets!=='object'||Array.isArray(f.budgets))f.budgets={};
  if(!Array.isArray(f.goals))f.goals=[];
  if(!Array.isArray(f.recurring))f.recurring=[];
+ if(!Array.isArray(f.balanceAdjustments))f.balanceAdjustments=[];
  if(!currencies.includes(f.currency))f.currency='SAR';
  return f;
 }
@@ -41,6 +43,7 @@ function totals(f,month=shownMonth){const current=f.transactions.filter(x=>month
  return {income:total(current.filter(x=>x.type==='income')),expense:total(current.filter(x=>x.type==='expense')),
   transfers:current.filter(x=>x.type==='transfer').length,current};}
 function balance(f,id){let b=clampCents(f.accounts.find(x=>x.id===id)?.opening||0);
+ for(const a of f.balanceAdjustments||[]){if(a.accountId===id)b+=clampCents(a.amount)}
  for(const x of f.transactions){let a=clampCents(x.amount);
   if(x.type==='income'&&x.accountId===id)b+=a;
   if(x.type==='expense'&&x.accountId===id)b-=a;
@@ -99,8 +102,8 @@ function budgetLine(title,spent,limit,c){
 }
 function accounts(f){
  return '<section class="ym-money-surface"><div class="ym-money-section-title"><div><h3>حساباتك ومحافظك</h3><small>رصيد البداية + الحركات المسجلة</small></div><button type="button" data-money-account class="ym-money-link">＋ حساب</button></div>'+
- '<div class="ym-money-accounts">'+f.accounts.map(a=>'<div class="ym-money-account"><span class="ym-money-account-emoji">'+esc(a.icon||'💳')+'</span><small>'+esc(a.name)+'</small><b>'+mask(money(balance(f,a.id),f.currency))+'</b></div>').join('')+'</div>'+
- '<p class="muted mini">التحويل بين حساباتك لا يُحسب دخلًا أو مصروفًا جديدًا. الأرصدة تقديرية حسب تسجيلك للحركات.</p></section>';
+ '<div class="ym-money-accounts">'+f.accounts.map(a=>'<div class="ym-money-account"><span class="ym-money-account-emoji">'+esc(a.icon||'💳')+'</span><small>'+esc(a.name)+'</small><b>'+mask(money(balance(f,a.id),f.currency))+'</b><button class="ym-money-account-edit" data-money-account-edit="'+esc(a.id)+'" type="button">✎ تعديل الرصيد</button></div>').join('')+'</div>'+
+ '<p class="muted mini">تعديل الرصيد الحالي يسجل فرق تسوية منفصلًا، من غير مسح معاملاتك أو إضافته للدخل والمصروف.</p>'+ (f.balanceAdjustments.length?'<details class="ym-money-adjustment-history"><summary>سجل تسويات الأرصدة ('+f.balanceAdjustments.length+')</summary>'+f.balanceAdjustments.slice().reverse().slice(0,20).map(z=>'<div><span>'+esc(z.date||'')+' · '+esc(f.accounts.find(a=>a.id===z.accountId)?.name||'حساب محذوف')+'</span><b>'+mask(money(z.amount,f.currency))+'</b></div>').join('')+'</details>':'')+'</section>';
 }
 function savings(f){
  return '<section class="ym-money-surface"><div class="ym-money-section-title"><div><h3>أهداف الادخار</h3><small>تقدّم تشجّعك عليه، من غير خصم مبالغ تلقائيًا</small></div><button type="button" data-money-goal class="ym-money-link">＋ هدف ادخار</button></div>'+
@@ -228,23 +231,45 @@ function saveTransaction(){
  if(!save())return errorMsg('تعذر حفظ الحركة في حسابك. تأكد من الاتصال والمزامنة.');
  finish();api().notify?.('اتحفظت الحركة ✓');
 }
-function openAccount(){
- activeForm='account';const d=modal();
- $('ymMoneyDialogContent').innerHTML='<form id="ymMoneyAccountForm"><h2>إضافة حساب أو محفظة</h2>'+
- formField('اسم الحساب','<input id="ymMoneyAccountName" required maxlength="36" placeholder="بنك آخر، محفظة، صندوق ادخار">')+
- formField('الرصيد الافتتاحي','<input id="ymMoneyAccountOpening" inputmode="decimal" value="0" required placeholder="0.00">')+
- formField('رمز الحساب','<select id="ymMoneyAccountIcon"><option>💳</option><option>🏦</option><option>💵</option><option>📱</option><option>🧺</option></select>')+
- '<p class="muted mini">الرصيد الافتتاحي نقطة بداية حسابك، وليس دخلًا جديدًا لهذا الشهر.</p><p class="ym-money-form-error" id="ymMoneyFormError" role="alert"></p>'+
- '<div class="ym-money-modal-actions"><button class="btn" type="submit">إضافة الحساب</button><button type="button" class="btn soft" data-money-close>إلغاء</button></div></form>';
+function openAccount(accountId=null){
+ activeForm='account';const f=ensure(),d=modal(),account=f.accounts.find(a=>a.id===accountId)||null;
+ editing=account?.id||null;
+ const current=account?balance(f,account.id):0;
+ const icons=['💳','🏦','💵','📱','🧺'];
+ $('ymMoneyDialogContent').innerHTML='<form id="ymMoneyAccountForm"><h2>'+(account?'تعديل حسابك ورصيده الحالي':'إضافة حساب أو محفظة')+'</h2>'+
+ formField('اسم الحساب','<input id="ymMoneyAccountName" required maxlength="36" value="'+esc(account?.name||'')+'" placeholder="بنك، محفظة، نقدي">')+
+ (account?
+  formField('الرصيد الحالي المطلوب','<input id="ymMoneyAccountCurrent" inputmode="decimal" type="text" value="'+(current/100).toFixed(2)+'" required placeholder="0.00">')+
+  '<p class="muted mini">الرصيد المسجّل حاليًا: '+mask(money(current,f.currency))+
+  '. تغيير القيمة سيضيف تسوية بالفرق فقط. حركاتك السابقة والدخل والمصروف هتفضل كما هي.</p>':
+  formField('الرصيد الافتتاحي','<input id="ymMoneyAccountOpening" inputmode="decimal" value="0" required placeholder="0.00">')+
+  '<p class="muted mini">الرصيد الافتتاحي نقطة بداية لحسابك، ومش دخل جديد للشهر.</p>')+
+ formField('رمز الحساب','<select id="ymMoneyAccountIcon">'+icons.map(icon=>'<option '+(account?.icon===icon?'selected':'')+'>'+icon+'</option>').join('')+'</select>')+
+ '<p class="ym-money-form-error" id="ymMoneyFormError" role="alert"></p>'+
+ '<div class="ym-money-modal-actions"><button class="btn" type="submit">'+(account?'حفظ التعديل':'إضافة الحساب')+'</button><button type="button" class="btn soft" data-money-close>إلغاء</button></div></form>';
  if(!d.open)d.showModal();
 }
 function saveAccount(){
- const f=ensure(),title=$('ymMoneyAccountName')?.value.trim().slice(0,36);
- const opening=cleanAmount($('ymMoneyAccountOpening')?.value);
- if(!title||opening===null)return errorMsg('اكتب اسم الحساب ورصيده الافتتاحي الصحيح.');
- if(f.accounts.some(a=>a.name.toLowerCase()===title.toLowerCase()))return errorMsg('هذا الاسم مستخدم لحساب آخر.');
- f.accounts.push({id:newId(),name:title,opening,icon:$('ymMoneyAccountIcon')?.value||'💳'});
- if(!save())return errorMsg('تعذّر الحفظ.');finish();
+ const f=ensure(),title=$('ymMoneyAccountName')?.value.trim().slice(0,36),account=f.accounts.find(a=>a.id===editing)||null;
+ if(!title)return errorMsg('اكتب اسم الحساب.');
+ if(f.accounts.some(a=>a.id!==account?.id&&a.name.trim().toLocaleLowerCase()===title.toLocaleLowerCase()))
+  return errorMsg('اسم الحساب موجود بالفعل، اختار اسم مختلف.');
+ const icon=$('ymMoneyAccountIcon')?.value||'💳';
+ if(account){
+  const desired=cleanSignedAmount($('ymMoneyAccountCurrent')?.value);
+  if(desired===null)return errorMsg('اكتب الرصيد الحالي الصحيح. ممكن تستخدم قيمة سالبة لو فيه مديونية.');
+  const before=balance(f,account.id),delta=desired-before;
+  if(!Number.isSafeInteger(delta)||Math.abs(delta)>=100000000000)return errorMsg('المبلغ خارج الحدود المسموحة.');
+  account.name=title;account.icon=icon;
+  if(delta!==0)f.balanceAdjustments.push({id:newId(),accountId:account.id,date:today(),amount:delta,
+   before,after:desired,createdAt:new Date().toISOString(),source:'manual_reconciliation'});
+ }else{
+  const opening=cleanAmount($('ymMoneyAccountOpening')?.value);
+  if(opening===null)return errorMsg('اكتب الرصيد الافتتاحي الصحيح.');
+  f.accounts.push({id:newId(),name:title,opening,icon});
+ }
+ if(!save())return errorMsg('تعذّر حفظ الحساب. راجع الاتصال والمزامنة.');
+ finish();api().notify?.('تم تعديل الحساب والرصيد ✓');
 }
 function openBudget(){
  activeForm='budget';const f=ensure(),d=modal();
@@ -332,6 +357,10 @@ function exportCsv(){
  x.date,labels[x.type]||x.type,x.title,x.type==='transfer'?'تحويل':catName(x.category,x.type),
  (x.amount/100).toFixed(2),f.currency,f.accounts.find(a=>a.id===x.accountId)?.name||'',
  f.accounts.find(a=>a.id===x.toAccountId)?.name||'',x.note||''
+ ]),
+ ...f.balanceAdjustments.map(a=>[a.date,'تسوية رصيد','تعديل الرصيد الحالي','تسوية ليست دخلًا أو مصروفًا',
+ (a.amount/100).toFixed(2),f.currency,f.accounts.find(x=>x.id===a.accountId)?.name||'', '',
+ 'الرصيد قبل التسوية: '+(a.before/100).toFixed(2)+'؛ بعد التسوية: '+(a.after/100).toFixed(2)
  ])]);}
 function init(){
  if(!$('ymMoneyApp'))return;
@@ -346,6 +375,7 @@ function init(){
  if(b.hasAttribute('data-money-delete'))return deleteTransaction(b.dataset.moneyDelete);
  if(b.hasAttribute('data-money-export'))return exportCsv();
  if(b.hasAttribute('data-money-account'))return openAccount();
+ if(b.hasAttribute('data-money-account-edit'))return openAccount(b.dataset.moneyAccountEdit);
  if(b.hasAttribute('data-money-budget'))return openBudget();
  if(b.hasAttribute('data-money-goal'))return openGoal();
  if(b.hasAttribute('data-money-goal-edit'))return openGoal(b.dataset.moneyGoalEdit);
@@ -395,6 +425,6 @@ function init(){
  if(id==='ymMoneyRecurringForm')saveRecurring();
  });
 }
-window.YawmiMoney={render,totals,balance,cleanAmount,categoryChart,goalProgress,getState:()=>ensure()};
+window.YawmiMoney={render,totals,balance,cleanAmount,cleanSignedAmount,categoryChart,goalProgress,getState:()=>ensure()};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
