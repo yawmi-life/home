@@ -1,4 +1,4 @@
-/* YAWMI V31: book discovery. Metadata from Open Library, no account data sent. */
+/* YAWMI V35: public metadata from Google Books + Open Library, with Arabic edition validation. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -17,21 +17,41 @@ const cats=[
 ['environment','البيئة والطبيعة','environmental_science'],['law','القانون','law'],['cooking','الطبخ','cooking'],
 ['sports','الرياضة','sports']];
 const fields='key,title,author_name,cover_i,ratings_average,ratings_count,number_of_pages_median,edition_count,first_publish_year,language,ebook_access,public_scan_b,want_to_read_count,already_read_count,currently_reading_count';
+const Arabic=/[\u0600-\u06FF]/;
+const normalizedTitle=x=>String(x||'').normalize('NFKC').toLowerCase().replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[^\u0621-\u064Aa-z0-9]+/g,' ').trim();
+const aliases=[['العادات الذرية','Atomic Habits'],['فن اللامبالاة','The Subtle Art of Not Giving a F'],['قوة العادات','The Power of Habit'],['العادات السبع','The 7 Habits of Highly Effective People'],['الأب الغني والأب الفقير','Rich Dad Poor Dad'],['العمل العميق','Deep Work']];
+function aliasOf(q){let z=normalizedTitle(q);for(const [ar,en] of aliases){if(z===normalizedTitle(ar))return en;if(z===normalizedTitle(en))return ar}return ''}
+function imageOf(b){if(b.coverUrl)return b.coverUrl;return cover(b.coverId)}
+function externalBookUrl(b){return b.googleId?'https://books.google.com/books?id='+encodeURIComponent(b.googleId):'https://openlibrary.org'+b.key}
+function googleImage(x){try{const u=new URL(x);if(u.protocol==='http:')u.protocol='https:';return u.protocol==='https:'&&['books.google.com','books.googleusercontent.com'].includes(u.hostname)?u.href:''}catch(_){return ''}}
+function googleBook(d){
+ const v=d?.volumeInfo||{},gid=String(d?.id||''),title=String(v.title||'').trim();
+ if(!/^[A-Za-z0-9_-]{6,40}$/.test(gid)||!title)return null;
+ const reviews=count(v.ratingsCount),rating=Number(v.averageRating),language=String(v.language||'').toLowerCase();
+ const desc=String(v.description||'').replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/\s+/g,' ').trim().slice(0,1500);
+ return {key:'gb:'+gid,googleId:gid,source:'Google Books',title:title.slice(0,190),
+  author:Array.isArray(v.authors)?v.authors.slice(0,3).map(x=>String(x).slice(0,100)).join('، '):'',
+  coverId:0,coverUrl:googleImage(v.imageLinks?.thumbnail||v.imageLinks?.smallThumbnail||''),
+  pages:Math.min(100000,count(v.pageCount)),rating:reviews&&rating>=1&&rating<=5?Number(rating.toFixed(2)):null,reviews,
+  year:count(String(v.publishedDate||'').slice(0,4)),editions:1,wants:0,read:0,reading:0,
+  langs:language==='ar'?['ara']:[language],language,summary:desc,access:'',scan:false};
+}
+function isRealArabic(b){return Arabic.test(b.title)&&(b.language==='ar'||b.langs?.includes('ara'))}
 const count=x=>Number.isFinite(Number(x))&&Number(x)>0?Math.round(Number(x)):0;
 const fmt=x=>Number(x).toLocaleString('ar-EG');
 const workKey=x=>/^\/works\/OL[0-9]+W$/.test(String(x||''))?String(x):null;
 const cover=x=>count(x)?'https://covers.openlibrary.org/b/id/'+count(x)+'-M.jpg':'';
 const rating=b=>b.rating==null?'⭐ لا يوجد تقييم موثّق':'⭐ '+b.rating.toFixed(1)+'/5 · '+fmt(b.reviews)+' تقييم';
-const language=b=>b.langs.includes('ara')?(b.langs.length===1?'عربي':'له طبعة عربية'):b.langs.length?'أجنبي':'اللغة غير محددة';
+const language=b=>isRealArabic(b)?'طبعة وعنوان بالعربية':b.langs?.includes('ara')?'له طبعة عربية؛ عنوان المصدر غير مترجم':b.langs?.length?'أجنبي':'اللغة غير محددة';
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-let cat='self',lang='all',sorting='popular',keyword='',books=[],started=false,expanded=false,loading=false,error='',showCount=24;
+let cat='self',lang='all',sorting='relevance',keyword='',books=[],started=false,expanded=false,loading=false,error='',showCount=24;
 let generation=0,nextSlot=0,controller=null,detailToken=0,activeDetail=null;
-const memory=new Map(),cacheName='yawmi_books_public_v31';
+const memory=new Map(),cacheName='yawmi_books_public_v35';
 function normalize(d){
  const key=workKey(d?.key),title=String(d?.title||'').trim();
  if(!key||!title)return null;
  const reviews=count(d.ratings_count),r=Number(d.ratings_average);
- return {key,title:title.slice(0,190),
+ return {key,source:'Open Library',title:title.slice(0,190),
  author:Array.isArray(d.author_name)?d.author_name.slice(0,3).map(x=>String(x).slice(0,100)).join('، '):'',
  coverId:count(d.cover_i),pages:Math.min(100000,count(d.number_of_pages_median)),
  rating:reviews&&r>=1&&r<=5?Number(r.toFixed(2)):null,reviews,
@@ -42,7 +62,9 @@ function normalize(d){
 }
 const pop=b=>Math.log1p(b.wants)*2.5+Math.log1p(b.read)*1.6+Math.log1p(b.reviews)*1.3+Math.log1p(b.editions);
 const quality=b=>b.rating==null?-1:(b.rating*b.reviews+3.5*20)/(b.reviews+20);
-function order(items){return [...items].sort((a,b)=>sorting==='rating'?
+function relevance(b){const q=normalizedTitle(keyword),t=normalizedTitle(b.title),alt=normalizedTitle(aliasOf(keyword));return (!q?0:t===q?150:t.includes(q)?100:0)+(alt&&t.includes(alt)?80:0)+(isRealArabic(b)?6:0)}
+function order(items){return [...items].sort((a,b)=>sorting==='relevance'?relevance(b)-relevance(a)||pop(b)-pop(a):
+ sorting==='rating'?
  quality(b)-quality(a)||b.reviews-a.reviews||pop(b)-pop(a):
  sorting==='popular'?pop(b)-pop(a)||quality(b)-quality(a):a.index-b.index)}
 function fromCache(k){
