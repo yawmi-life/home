@@ -226,7 +226,8 @@ async function showNativeNotification(key){
  try{new Notification(title,options);return true}catch(_){return false}
 }
 async function checkNotifications(){
- const s=state();if(!s||!s.lifeNotificationPrefs.enabled||!('Notification' in window)||Notification.permission!=='granted'||document.hidden||notifyBusy||!canWrite())return;
+ const s=state();if(window.YawmiPush?.active?.())return;
+ if(!s||!s.lifeNotificationPrefs.enabled||!('Notification' in window)||Notification.permission!=='granted'||document.hidden||notifyBusy||!canWrite())return;
  notifyBusy=true;
  try{
  const now=Date.now(),fired=new Set(s.lifeNotificationSeen);
