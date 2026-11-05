@@ -168,3 +168,33 @@ test('Android widget first launch routes to a valid default design without requi
  await page.goto('/index.html?source=widget&quick=tasks',{waitUntil:'domcontentloaded'});
  await expect.poll(()=>new URL(page.url()).pathname.endsWith('/01_ATLAS_Executive.html')).toBe(true);
 });
+
+test('V36 weekly habit fallback uses its creation weekday rather than showing it every day',async({page})=>{
+ await boot(page);
+ const data=await page.evaluate(()=>{
+  const h={id:'weeklyQA',title:'أسبوعية',active:true,repeat:'weekly',created:'2026-11-02T10:30:00.000Z',target:1};
+  return {
+   onMonday:window.YawmiLifeV36.habitScheduled(h,'2026-11-02'),
+   onThursday:window.YawmiLifeV36.habitScheduled(h,'2026-11-05'),
+   onNextMonday:window.YawmiLifeV36.habitScheduled(h,'2026-11-09')
+  };
+ });
+ expect(data).toEqual({onMonday:true,onThursday:false,onNextMonday:true});
+});
+test('V36 reading habit excludes orphaned book logs and water respects the explicit corrected quantity',async({page})=>{
+ await boot(page);
+ const data=await page.evaluate(()=>{
+  const s=window.__state,day='2026-11-05';
+  s.habits.push({id:'reading',title:'قراءة',repeat:'daily',target:20,active:true});
+  s.habits.push({id:'water',title:'مياه',repeat:'daily',active:true,target:8});
+  s.bookReadings=[{bookId:'book1',date:day,pages:5},{bookId:'deleted-book',date:day,pages:999}];
+  s.daily[day]={habits:{water:8},waterMl:250,tasks:{}};
+  return {
+    reading:window.YawmiLifeV36.getFacts(s,day).habits.find(h=>h.id==='reading')?.id,
+    facts:window.YawmiLifeV36.getFacts(s,day),
+    xp:window.YawmiExtraAPI.getScores().xp
+  };
+ });
+ expect(data.facts.doneHabits).toBe(0);
+ expect(data.xp).toBe(155);
+});
