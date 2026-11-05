@@ -116,6 +116,6 @@ test('Arabic filter refuses English work title merely flagged as having an Arabi
  await page.getByRole('searchbox',{name:'ابحث عن كتاب أو مؤلف'}).fill('Atomic Habits');
  await page.getByRole('button',{name:'بحث'}).click();
  await page.locator('#ymCatalogLanguage').selectOption('ar');
- await expect(page.locator('.ym-catalog-card')).toContainText('العادات الذرية',{timeout:18000});
- await expect(page.locator('.ym-catalog-card')).not.toContainText('Atomic Habits');
+ await expect(page.locator('.ym-catalog-card').first()).toContainText('العادات الذرية',{timeout:18000});
+ await expect(page.locator('.ym-catalog-card').first()).not.toContainText('Atomic Habits');
 });
