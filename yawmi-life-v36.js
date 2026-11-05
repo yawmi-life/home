@@ -49,7 +49,7 @@ function taskScheduled(t,date){
 function habitScheduled(h,date){
  if(!h||h.active===false||(Array.isArray(h.pausedDates)&&h.pausedDates.includes(date)))return false;
  const dow=new Date(date+'T12:00:00').getDay();
- if(h.created&&date<plusDay(new Date(h.created).toLocaleDateString('en-CA'),0))return false;
+ if(h.created){const created=new Date(h.created);if(Number.isFinite(+created)){const baseline=[created.getFullYear(),String(created.getMonth()+1).padStart(2,'0'),String(created.getDate()).padStart(2,'0')].join('-');if(date<baseline)return false;}}
  if(h.repeat==='daily'||!h.repeat)return true;
  if(h.repeat==='weekdays')return dow!==5&&dow!==6;
  if(h.repeat==='weekends')return dow===5||dow===6;
@@ -159,7 +159,7 @@ function habitPanel(){
  x.innerHTML='<div class="ym36-title"><div><small>HABIT FLEXIBILITY · بدون XP إضافي</small><h3>خطة عادات مرنة</h3><p>خد راحة من عادة أو اربطها بعادة تانية. إنجازاتك القديمة لا تتغير.</p></div></div>'+
  '<div class="ym36-habit-fields"><label>العادة<select id="ymV36HabitPick">'+choices.map(z=>'<option value="'+esc(z.id)+'" '+(z.id===h.id?'selected':'')+'>'+esc(z.title)+'</option>').join('')+'</select></label>'+
  '<label>اليوم<input id="ymV36HabitDate" type="date" value="'+date+'"></label>'+
- '<label>أعملها بعد<select id="ymV36HabitAfter"><option value="">بدون ربط</option>'+choices.filter(z=>z.id!==h.id&&z.id!==h.afterHabitId||z.id===h.afterHabitId&&z.id!==h.id).map(z=>'<option value="'+esc(z.id)+'" '+(after===z.id?'selected':'')+'>'+esc(z.title)+'</option>').join('')+'</select></label></div>'+
+ '<label>أعملها بعد<select id="ymV36HabitAfter"><option value="">بدون ربط</option>'+choices.filter(z=>z.id!==h.id).map(z=>'<option value="'+esc(z.id)+'" '+(after===z.id?'selected':'')+'>'+esc(z.title)+'</option>').join('')+'</select></label></div>'+
  '<div class="ym36-controls"><button type="button" data-v36-rest>'+ (rest?'↩ إلغاء يوم الراحة':'☀️ اعتبره يوم راحة')+'</button><button type="button" data-v36-after>حفظ ربط العادتين</button></div>'+
  '<p class="ym36-muted">'+(rest?'العادة مش مطلوبة في اليوم ده، ولا يمنح راحة اليوم نقاطًا.':'أيام الراحة لا تمنح XP، ولا يمكن تسجيل راحة على يوم تم فيه نشاط لهذه العادة.')+'</p>';
 }
