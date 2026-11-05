@@ -21,7 +21,7 @@ public final class YawmiShortcutWidget extends AppWidgetProvider {
     private static PendingIntent open(Context context, String target, int code) {
         Intent intent = new Intent(context, com.google.androidbrowserhelper.trusted.LauncherActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse(ROOT + "01_ATLAS_Executive.html?quick=" + target));
+        intent.setData(Uri.parse(ROOT + "index.html?source=widget&quick=" + target));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return PendingIntent.getActivity(
             context, code, intent,
