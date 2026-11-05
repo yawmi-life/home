@@ -115,3 +115,15 @@ test('new V36 controls are linked in all three production skins with no new side
   await expect(page.locator('.sidebar [data-tab="quick"],.sidebar [data-tab="light"]')).toHaveCount(0);
  }
 });
+
+test('Android widget deep link routes to tasks only after account access and clears URL token',async({page})=>{
+ await page.goto('/tests/life-v36.html?quick=tasks');
+ await expect.poll(()=>page.evaluate(()=>window.__view)).toBe('tasks');
+ expect(new URL(page.url()).searchParams.has('quick')).toBe(false);
+});
+test('Android widget deep link does not bypass the login gate',async({page})=>{
+ await page.addInitScript(()=>{Object.defineProperty(window,'__willTestLogin',{value:true})});
+ await page.goto('/tests/life-v36.html?quick=calendar');
+ await expect.poll(()=>page.evaluate(()=>window.__view)).toBe('calendar');
+ expect(await page.evaluate(()=>window.YawmiCloud.currentUser?.id)).toBe('qa-user');
+});
