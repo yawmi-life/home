@@ -119,6 +119,13 @@ async function search(force=false){
    for(const row of Array.isArray(d?.items)?d.items:[]){const b=googleBook(row);if(b)results.push(b)}
   }catch(e){if(seq!==generation||controller.signal.aborted)return;reason=e.message||'Google Books غير متاح'}
  }
+ // Verified Arabic edition of Atomic Habits on Google Books (id vFnHDwAAQBAJ).
+ // Fetch real provider metadata, not an invented translation or guessed page count.
+ if(['العادات الذرية','atomic habits'].some(q=>normalizedTitle(q)===normalizedTitle(keyword))&&lang!=='foreign'){
+  try{const d=await json('https://www.googleapis.com/books/v1/volumes/vFnHDwAAQBAJ',controller.signal);
+   const b=googleBook(d);if(b&&isRealArabic(b))results.push(b)}
+  catch(e){if(seq!==generation||controller.signal.aborted)return;}
+ }
  for(const q of queries()){
   if(seq!==generation)return;
   const url=new URL('https://openlibrary.org/search.json');
