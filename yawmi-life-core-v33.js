@@ -73,7 +73,7 @@ function financeBillVisible(){return window.YawmiLife?.isPrivacyLocked?.('money'
 function itemsOn(d){
  const s=state();if(!s||!validDay(d))return [];
  const out=[];
- for(const e of s.lifeCalendar){if(localDayEvent(e,d))out.push({id:e.id,type:e.type||'event',date:d,time:e.time||'',title:e.title,note:e.note||'',source:'event',editable:true})}
+ for(const e of s.lifeCalendar){if(localDayEvent(e,d))out.push({id:e.id,type:e.type||'event',date:d,time:e.time||'',end:e.end||'',title:e.title,note:e.note||'',source:'event',editable:true})}
  for(const t of s.tasks||[])if(taskActive(t,d))out.push({id:t.id,type:'task',date:d,time:t.time||'',title:t.title,done:!!s.daily?.[d]?.tasks?.[t.id],source:'task'});
  const active=(s.habits||[]).filter(h=>habitActive(h,d));
  if(active.length){const completed=active.filter(h=>Number(s.daily?.[d]?.habits?.[h.id]||0)>=(Number(h.target)||1)).length;
@@ -91,7 +91,7 @@ function itemsOn(d){
 const typeStyle={event:['📅','موعد'],appointment:['📍','مقابلة'],timeblock:['⏳','حجز وقت'],task:['☑','مهمة'],habit:['◉','عادات'],bill:['🧾','التزام'],reminder:['🔔','تذكير']};
 function itemMarkup(x){
  const k=typeStyle[x.type]||typeStyle.event;
- return '<div class="yl-agenda-item"><span class="yl-agenda-icon">'+k[0]+'</span><div class="yl-agenda-info"><b>'+esc(x.title)+'</b><small>'+esc(k[1])+(x.time?' · '+esc(x.time):'')+(x.done?' · ✓ مكتمل':'')+'</small>'+(x.note?'<p>'+esc(x.note)+'</p>':'')+'</div>'+
+ return '<div class="yl-agenda-item"><span class="yl-agenda-icon">'+k[0]+'</span><div class="yl-agenda-info"><b>'+esc(x.title)+'</b><small>'+esc(k[1])+(x.time?' · '+esc(x.time)+(x.end?' – '+esc(x.end):''):'')+(x.done?' · ✓ مكتمل':'')+'</small>'+(x.note?'<p>'+esc(x.note)+'</p>':'')+'</div>'+
  (x.source==='event'?btn('تعديل','data-life-event-edit="'+esc(x.id)+'"'):x.source==='reminder'?btn('عرض','data-life-open-reminder="'+esc(x.id)+'"'):'')+'</div>';
 }
 function calendar(){
@@ -143,6 +143,13 @@ function saveEvent(){
  if(!title||!validDay(date)||!validTime(time)||(end&&!validTime(end)))return error('اكتب اسمًا وتاريخًا ووقتًا صحيحًا.');
  if(end&&end<=time)return error('وقت النهاية لازم يكون بعد البداية.');
  const remind=$('ylEventRemind').value,repeat=$('ylEventRepeat').value;
+ const hasConflict=s.lifeCalendar.some(existing=>{
+  if(existing.id===editing||!localDayEvent(existing,date)||!validTime(existing.time))return false;
+  const existingEnd=validTime(existing.end)?existing.end:existing.time;
+  const newEnd=end||time;
+  return time===existing.time||(end&&existingEnd&&time<existingEnd&&newEnd>existing.time);
+ });
+ if(hasConflict&&!confirm('فيه موعد تاني في نفس الوقت أو فترة متداخلة. تحب تحفظ الموعد الجديد رغم التداخل؟'))return;
  const item={id:editing||id(),title,date,time,end,type:$('ylEventType').value,repeat:repeat==='yearly'?'yearly':'none',remind,
  note:$('ylEventNote').value.trim().slice(0,260),updatedAt:new Date().toISOString()};
  const old=s.lifeCalendar.find(x=>x.id===editing);if(old)Object.assign(old,item);else s.lifeCalendar.push(item);
