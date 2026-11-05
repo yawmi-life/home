@@ -1,0 +1,62 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>YAWMI V34 onboarding & navigation integration test</title>
+<link rel="stylesheet" href="../yawmi-features-v23.css"><link rel="stylesheet" href="../yawmi-v34.css">
+<style>:root{--accent:#6951aa;--accent-faint:#eee9ff;--text:#282239;--muted:#66627a;--border:#dcd5ed;--panel:#fff;--surface:#fff;--panel2:#f6f3ff}
+body{font:14px system-ui;background:#f6f4fa;color:#282239;margin:0 auto;max-width:850px;padding:20px}
+button,input{font:inherit}button{cursor:pointer}.sidebar{display:grid;gap:10px;padding:18px;background:#fff;border:1px solid var(--border);border-radius:17px}
+.sidebar button{padding:10px;border-radius:10px;border:1px solid var(--border)}
+.bottom-nav{display:flex;gap:10px;margin:15px 0}.bottom-nav button{padding:10px;border:1px solid var(--border)}
+#ymEnhancementsHome{display:none}
+</style></head><body>
+<h1>يومي | اختبار البداية وتخصيص القائمة</h1>
+<div id="ymEnhancementsHome"></div>
+<aside class="sidebar" aria-label="الأقسام">
+<button class="nav-link" data-tab="home">⌂ الرئيسية</button>
+<button class="nav-link" data-tab="tasks">☷ المهام</button>
+<button class="nav-link" data-tab="habits">◉ العادات</button>
+<button class="nav-link" data-tab="money">💳 ماليتي</button>
+<button class="nav-link" data-tab="diary">✍ يومياتي</button>
+<button class="nav-link" data-tab="calendar">🗓️ التقويم</button>
+<button class="nav-link" data-tab="books">📚 مكتبتي</button>
+<button class="ym-section-manage-btn" type="button" data-ym-sections>☷ تخصيص الأقسام <strong data-ym-hidden-count>0</strong></button>
+</aside>
+<nav class="bottom-nav"><button data-tab="home">الرئيسية</button><button data-tab="tasks">المهام</button><button data-tab="habits">العادات</button></nav>
+<section id="page-home" class="on"></section><section id="page-money"></section><section id="page-diary"></section><section id="page-tasks"></section>
+<aside id="yawmiMenuDrawer" class="ym-menu-drawer">
+<button class="ym-menu-link" data-yam-action="account">الحساب</button>
+<button class="ym-menu-link" data-yam-action="money">ماليتي</button>
+<button class="ym-menu-link" data-yam-action="diary">يومياتي</button>
+<button class="ym-menu-link" data-yam-action="books">مكتبتي</button>
+<button class="ym-menu-link" data-yam-action="calendar">التقويم</button>
+<button class="ym-menu-link" data-yam-action="sections" data-ym-sections>تخصيص الأقسام</button>
+</aside>
+<dialog id="ymOnboard" class="ym-onboard" aria-label="خصص أولوياتك في يومي">
+<h2>✨ ابدأ يومي بطريقتك</h2><p>اختار عاداتك ومهامك.</p>
+<h3>العادات</h3><div id="ymOnboardChoices" class="ym-choices"></div>
+<h3>المهام</h3><div id="ymOnboardTaskChoices" class="ym-choices"></div>
+<label for="ymOnboardGoal">هدف اختياري</label><input id="ymOnboardGoal" maxlength="100">
+<p id="ymOnboardFeedback" role="status"></p>
+<button id="ymOnboardContinue" type="button">ابدأ رحلتي باختياراتي ✓</button>
+<button id="ymOnboardSkip" type="button">ابدأ بالإعدادات المقترحة</button>
+</dialog>
+<div id="ymUndoBar" hidden><span id="ymUndoLabel"></span><button id="ymUndoAction">تراجع</button></div>
+<script>
+const KEY='yawmi_v34_fixture';
+const today=new Date().toISOString().slice(0,10);
+const habits=['fajr','reading','water','sport','quran','sleep','learning','family','focus','adhkarAM','adhkarPM'].map((id,i)=>({id,title:'عادة '+id,icon:'⭐',target:i+1,unit:'مرة',active:true,repeat:'daily'}));
+const tasks=['t1','t2','t3','t4'].map((id,i)=>({id,title:'مهمة مقترحة '+id,category:'discipline',repeat:'once',date:today,time:'08:00',priority:'medium',difficulty:1,notes:'',subtasks:[],weekDays:[]}));
+window.__state=sessionStorage.getItem(KEY)?JSON.parse(sessionStorage.getItem(KEY)):{version:7,profile:{name:'اختبار'},theme:{mode:'light'},habits,tasks,daily:{},history:[],books:[],goals:[],hiddenSections:[]};
+window.__saveCount=0;window.__notices=[];window.__failSave=false;
+window.YawmiCloud={configured:true,ready:true,revision:1,currentUser:{id:'test-account'}};
+window.YawmiExtraAPI={
+ getState:()=>window.__state,
+ save:()=>{window.__saveCount++;if(window.__failSave)return false;sessionStorage.setItem(KEY,JSON.stringify(window.__state));return true},
+ uid:()=>Math.random().toString(36).slice(2)+Date.now().toString(36),
+ today:()=>today,notify:msg=>window.__notices.push(String(msg)),
+ getScores:()=>({xp:250,coins:12}),
+ render:()=>{},goHome:()=>{document.querySelectorAll('[id^=page-]').forEach(e=>e.classList.remove('on'));document.getElementById('page-home').classList.add('on')},
+ goPage:()=>{}
+};
+</script>
+<script src="../yawmi-features-v23.js"></script><script src="../yawmi-navigation-v34.js"></script>
+</body></html>
