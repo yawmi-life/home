@@ -31,3 +31,5 @@ test('user Arabic aliases resolve without changing title metadata',()=>{
  assert.equal(a.aliasOf('العادات الذرية'),'Atomic Habits');
  assert.equal(a.aliasOf('Atomic Habits'),'العادات الذرية');
 });
+
+test('ISBN parser handles numeric books without invented metadata',()=>{const a=catalog();assert.equal(a.isbnOf('978-1-7351717-0-1'),'9781735171701');assert.equal(a.isbnOf('٩٧٨١٧٣٥١٧١٧٠١'),'9781735171701');assert.equal(a.isbnOf('0306406152'),'0306406152');assert.equal(a.isbnOf('كتاب عربي'),'');});
