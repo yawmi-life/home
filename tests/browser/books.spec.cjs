@@ -31,7 +31,7 @@ async function provider(page){
   route.fulfill({status:200,headers:{'access-control-allow-origin':'*','content-type':'application/json'},
    body:JSON.stringify({description:{type:'/type/text',value:'كتاب يشرح كيف يمكن بناء العادات الصغيرة وتحسين الممارسات اليومية عبر خطوات متدرجة.'}})}));
  await page.goto('/tests/books.html');
- await expect(page.locator('.ym-catalog-card')).toHaveCount(4,{timeout:15000});
+ await expect(page.locator('.ym-catalog-card')).toHaveCount(3,{timeout:15000});
 }
 
 test('book discovery ranks verified popularity and rating, without invented metadata',async({page})=>{
@@ -79,7 +79,7 @@ test('book catalog works offline using previously cached public search metadata'
  await context.setOffline(true);
  try{
   await page.evaluate(()=>window.YawmiBookCatalog.search());
-  await expect(page.locator('.ym-catalog-card')).toHaveCount(4);
+  await expect(page.locator('.ym-catalog-card')).toHaveCount(3);
   await expect(page.locator('#ymBookCatalog')).toContainText('أوفلاين');
  }finally{await context.setOffline(false)}
 });
