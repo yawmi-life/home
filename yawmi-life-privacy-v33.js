@@ -63,6 +63,7 @@ function lockNow(force=false){
  if(moneyPage?.classList.contains('on')){if(privacy().lockMoney)cover('money')}
  if(diaryPage?.classList.contains('on')){if(privacy().lockDiary)cover('diary')}
  if($('page-coach')?.classList.contains('on'))window.YawmiLifeGrowth?.render('coach');
+ if($('page-privacy')?.classList.contains('on'))privacyScreen();
  if(force)api()?.notify?.('تم قفل الأقسام الخاصة.');
 }
 function privacyScreen(){
@@ -72,7 +73,7 @@ function privacyScreen(){
  (locked?'<section class="yl-surface yl-privacy-locked"><h3>أدخل رمزك لإدارة إعدادات الحماية</h3><p class="muted">لحماية إعدادات القفل، افتحها بالرمز الحالي أولاً.</p>'+
  '<form id="ylPinSettingsGate" class="yl-pin-inline" autocomplete="off"><label>رمز القفل<input id="ylPinSettingsInput" type="password" inputmode="numeric" minlength="6" maxlength="12" pattern="[0-9]{6,12}" autocomplete="off" required></label>'+
  '<button type="submit" class="yl-action primary">فتح الإعدادات</button><p class="yl-error" id="ylPinSettingsError" role="alert"></p></form></section>':
- '<div class="yl-twocol"><section class="yl-surface"><div class="yl-toolbar"><div><h3>قفل الواجهة</h3><small>حالة الرمز: '+(pinSet?'مفعّل':'غير مفعّل')+'</small></div>'+btn('🔒 قفل الآن','data-life-lock-now')+'</div>'+
+ '<div class="yl-twocol"><section class="yl-surface"><div class="yl-toolbar"><div><h3>قفل الواجهة</h3><small>حالة الرمز: '+(pinSet?'مفعّل':'غير مفعّل')+'</small></div>'+(pinSet?btn('🔒 قفل الآن','data-life-lock-now'):'')+'</div>'+
  '<p class="muted">اختار رقمًا من 6–12 خانة. محفوظ كبصمة مشتقة من PBKDF2 بملح عشوائي، وليس كنص صريح.</p>'+
  '<div class="yl-privacy-actions">'+btn(pinSet?'تغيير رمز القفل':'إنشاء رمز القفل','data-life-set-pin','primary')+
  (pinSet?btn('إلغاء رمز القفل','data-life-remove-pin','danger'):'')+'</div>'+
@@ -84,7 +85,7 @@ function privacyScreen(){
  '<section class="yl-surface"><h3>بياناتك ونسخك الاحتياطية</h3><p class="muted">صدّر نسخة JSON من الملاحظات، والصحة، والروتينات، والتقويم، والخطط، والمالية واليوميات. احتفظ بالملف في مكان آمن.</p>'+
  btn('⇩ تصدير بياناتي الخاصة','data-life-export-private','primary')+
  '<p class="muted">هذه البيانات تُحفظ داخل حسابك الحالي. قفل الشاشة لا يشفر البيانات المخزنة على الخادم أو في المتصفح، ولا يمنع مسؤولي الخدمة المخولين أو إضافات المتصفح من الوصول إلى البيانات.</p></section></div>')+
- '<section class="yl-surface yl-callout"><h3>حدود الحماية</h3><p>المزامنة تستخدم نظام حساب يومي وصلاحياته الحالية. رقم PIN محلي للتحكم في عرض القسم فقط؛ **ليس تشفيرًا من طرف إلى طرف** ولا بديلاً لكلمة مرور الحساب. عند ترك الجهاز، اقفل الشاشة وسجّل الخروج من الأجهزة المشتركة. لا يوجد استرداد تلقائي لرمز PIN عبر هذه الواجهة.</p></section>';
+ '<section class="yl-surface yl-callout"><h3>حدود الحماية</h3><p>المزامنة تستخدم نظام حساب يومي وصلاحياته الحالية. رقم PIN محلي للتحكم في عرض القسم فقط؛ ليس تشفيرًا من طرف إلى طرف، ولا بديلاً لكلمة مرور الحساب. عند ترك الجهاز، اقفل الشاشة وسجّل الخروج من الأجهزة المشتركة. لا يوجد استرداد تلقائي لرمز PIN عبر هذه الواجهة.</p></section>';
 }
 function btn(label,attr,variant='soft'){return L().btn(label,attr,variant)}
 function pinDialog(removing=false){
