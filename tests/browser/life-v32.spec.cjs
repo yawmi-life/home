@@ -126,3 +126,58 @@ test('three skins expose finance/journal only through navigation, not home short
   await expect(page.locator('.sidebar [data-tab="diary"]')).toHaveCount(1);
  }
 });
+
+test('existing financial accounts can be renamed and reconciled to an exact current balance without inventing income or expenses',async({page})=>{
+ await open(page);
+ await transaction(page,'income','راتب','3200','salary');
+ await transaction(page,'expense','مشتريات','350','groceries');
+ let initial=await page.evaluate(()=>({
+  cash:window.YawmiMoney.balance(window.__state.finance,'cash'),
+  before:window.YawmiMoney.totals(window.__state.finance,new Date().toISOString().slice(0,7))
+ }));
+ expect(initial.cash).toBe(285000);
+ await page.locator('[data-money-account-edit="cash"]').click();
+ await expect(page.locator('#ymMoneyAccountCurrent')).toHaveValue('2850.00');
+ await page.locator('#ymMoneyAccountName').fill('محفظتي النقدية');
+ await page.locator('#ymMoneyAccountCurrent').fill('1200.50');
+ await page.locator('#ymMoneyAccountForm button[type=submit]').click();
+ await expect(page.locator('#ymMoneyDialog')).not.toBeVisible();
+ const data=await page.evaluate(()=>{
+  const f=window.__state.finance,t=window.YawmiMoney.totals(f,new Date().toISOString().slice(0,7));
+  return {name:f.accounts.find(a=>a.id==='cash').name,
+   total:window.YawmiMoney.balance(f,'cash'),opening:f.accounts.find(a=>a.id==='cash').opening,
+   revenue:t.income,spent:t.expense,transactions:f.transactions.length,
+   adjustments:f.balanceAdjustments};
+ });
+ expect(data.name).toBe('محفظتي النقدية');
+ expect(data.total).toBe(120050);
+ expect(data.opening).toBe(0);
+ expect(data.revenue).toBe(320000);
+ expect(data.spent).toBe(35000);
+ expect(data.transactions).toBe(2);
+ expect(data.adjustments).toHaveLength(1);
+ expect(data.adjustments[0].amount).toBe(-164950);
+ await page.reload();
+ expect(await page.evaluate(()=>window.YawmiMoney.balance(window.__state.finance,'cash'))).toBe(120050);
+ await page.locator('[data-money-account-edit="cash"]').click();
+ await page.locator('#ymMoneyAccountCurrent').fill('1200.50');
+ await page.locator('#ymMoneyAccountForm button[type=submit]').click();
+ expect(await page.evaluate(()=>window.__state.finance.balanceAdjustments.length)).toBe(1);
+ await page.locator('[data-money-account-edit="cash"]').click();
+ await page.locator('#ymMoneyAccountCurrent').fill('-25.25');
+ await page.locator('#ymMoneyAccountForm button[type=submit]').click();
+ expect(await page.evaluate(()=>window.YawmiMoney.balance(window.__state.finance,'cash'))).toBe(-2525);
+ expect(await page.evaluate(()=>window.__state.finance.balanceAdjustments.length)).toBe(2);
+});
+test('account balance adjustment rejects invalid values and duplicate names without altering history',async({page})=>{
+ await open(page);
+ await page.locator('[data-money-account-edit="cash"]').click();
+ await page.locator('#ymMoneyAccountName').fill('حساب بنكي');
+ await page.locator('#ymMoneyAccountForm button[type=submit]').click();
+ await expect(page.locator('#ymMoneyFormError')).toContainText('اسم الحساب موجود');
+ await page.locator('#ymMoneyAccountName').fill('نقدي');
+ await page.locator('#ymMoneyAccountCurrent').fill('12.999');
+ await page.locator('#ymMoneyAccountForm button[type=submit]').click();
+ await expect(page.locator('#ymMoneyFormError')).toContainText('الرصيد الحالي الصحيح');
+ expect(await page.evaluate(()=>window.__state.finance.balanceAdjustments.length)).toBe(0);
+});
