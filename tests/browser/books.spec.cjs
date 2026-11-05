@@ -94,11 +94,11 @@ test('Arabic Atomic Habits search resolves a real Arabic-language edition and ve
  await provider(page);
  await page.getByRole('searchbox',{name:'ابحث عن كتاب أو مؤلف'}).fill('العادات الذرية');
  await page.getByRole('button',{name:'بحث'}).click();
- await expect(page.locator('.ym-catalog-card')).toContainText('العادات الذرية');
- await expect(page.locator('.ym-catalog-card')).not.toContainText('Atomic Habits');
+ await expect(page.locator('.ym-catalog-card').first()).toContainText('العادات الذرية');
+ await expect(page.locator('.ym-catalog-card').first()).not.toContainText('Atomic Habits');
  await page.locator('#ymCatalogLanguage').selectOption('ar');
- await expect(page.locator('.ym-catalog-card')).toContainText('جيمس كلير');
- await page.locator('.ym-catalog-card').getByRole('button',{name:/تفاصيل كتاب/}).click();
+ await expect(page.locator('.ym-catalog-card').first()).toContainText('جيمس كلير');
+ await page.locator('.ym-catalog-card').first().getByRole('button',{name:/تفاصيل كتاب/}).click();
  await expect(page.locator('.ym-catalog-description')).toContainText('التغييرات الصغيرة');
  await expect(page.locator('#ymCatalogDetail')).toContainText('Google Books');
  await expect(page.locator('#ymCatalogDetail a')).toHaveAttribute('href',/books.google.com\/books\?id=ARATOMIC123456/);
