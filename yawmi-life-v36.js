@@ -53,15 +53,15 @@ function habitScheduled(h,date){
  if(h.repeat==='daily'||!h.repeat)return true;
  if(h.repeat==='weekdays')return dow!==5&&dow!==6;
  if(h.repeat==='weekends')return dow===5||dow===6;
- if(h.repeat==='weekly')return Array.isArray(h.weekDays)&&h.weekDays.length?h.weekDays.includes(dow):true;
+ if(h.repeat==='weekly')return Array.isArray(h.weekDays)&&h.weekDays.length?h.weekDays.includes(dow):dow===new Date(h.created||Date.now()).getDay();
  if(h.repeat==='custom')return Array.isArray(h.weekDays)&&h.weekDays.includes(dow);
  return false;
 }
 const taskDone=(s,t,d)=>!!todayRec(s,d).tasks?.[t.id];
 function habitProgress(s,h,d){
- if(h.id==='reading')return (s.bookReadings||[]).filter(r=>r.date===d).reduce((n,r)=>n+Math.max(0,Number(r.pages)||0),0);
+ if(h.id==='reading'){const ids=new Set((s.books||[]).map(b=>b.id));return (s.bookReadings||[]).filter(r=>r.date===d&&ids.has(r.bookId)).reduce((n,r)=>n+Math.max(0,Number(r.pages)||0),0)}
  if(h.id==='quran')return (s.quran?.readings||[]).filter(r=>r.date===d).reduce((n,r)=>n+Math.max(0,Number(r.pages)||0),0);
- if(h.id==='water')return Math.max(0,Number(todayRec(s,d).waterMl||0),Number(todayRec(s,d).habits?.water||0)*250);
+ if(h.id==='water'){const r=todayRec(s,d);return Math.max(0,Number.isFinite(Number(r.waterMl))&&r.waterMl!==undefined?Number(r.waterMl):Number(r.habits?.water||r.water||0)*250)}
  return Math.max(0,Number(todayRec(s,d).habits?.[h.id]||0));
 }
 function habitDone(s,h,d){return habitProgress(s,h,d)>=(h.id==='water'?(s.waterPrefs?.goalMl||2000):Math.max(1,Number(h.target)||1))}
