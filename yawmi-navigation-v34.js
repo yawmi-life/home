@@ -8,7 +8,6 @@ const sections=[
  {id:'journey',icon:'✧',title:'رحلتي والمكافآت',group:'الإنتاجية'},
  {id:'reports',icon:'▥',title:'التحليلات والسجل',group:'الإنتاجية'},
  {id:'calendar',icon:'🗓️',title:'التقويم الذكي',group:'التخطيط'},
- {id:'reminders',icon:'🔔',title:'التذكيرات والمناسبات',group:'التخطيط'},
  {id:'notes',icon:'✎',title:'الأفكار والملاحظات',group:'التخطيط'},
  {id:'routines',icon:'☀️',title:'روتيني اليومي',group:'التخطيط'},
  {id:'planning',icon:'◎',title:'رؤية السنة وخطة 90 يوم',group:'التخطيط'},
