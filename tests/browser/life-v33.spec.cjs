@@ -75,7 +75,8 @@ test('health records sleep, steps, exercise and energy without XP and survives r
  await page.locator('#ylHealthForm button[type=submit]').click();
  let saved=await page.evaluate(()=>({h:window.__appState.lifeHealth[0],scores:window.YawmiExtraAPI.getScores()}));
  expect(saved.h).toMatchObject({sleepMin:450,steps:7600,exerciseMin:30,weightKg:69.5,energy:4});expect(saved.scores.xp).toBe(400);
- await expect(page.locator('#ymLifeHealth')).toContainText('7600');
+ const formatted=await page.evaluate(()=>Number(7600).toLocaleString('ar-EG'));
+ await expect(page.locator('#ymLifeHealth')).toContainText(formatted);
  await page.reload();expect(await page.evaluate(()=>window.__appState.lifeHealth.length)).toBe(1);
 });
 test('routine steps linked to existing habits do not count extra habit completion or XP',async({page})=>{
@@ -148,6 +149,7 @@ test('privacy opt-in PBKDF2 PIN gates financial and journal views, does not stor
  await expect(page.locator('#ylPinGateError').first()).toContainText('غير صحيح');
  await page.locator('#ylPinGateInput').first().fill('468751');
  await page.locator('#ylPinGateForm').first().getByRole('button',{name:'فتح القسم'}).click();
+ await expect.poll(()=>page.evaluate(()=>!window.YawmiLife.isPrivacyLocked('money'))).toBe(true);
  locked=await page.evaluate(()=>({money:window.YawmiLife.privacyGate('money'),diary:window.YawmiLife.privacyGate('diary')}));
  expect(locked).toEqual({money:true,diary:true});
  await page.reload();
