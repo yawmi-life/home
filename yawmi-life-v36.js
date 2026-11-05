@@ -259,9 +259,20 @@ function voice(){
  sr.onerror=()=>{$('ymV36Error').textContent='تعذّر الإملاء. اكتب بدلًا منه.'};sr.start()}
  catch(_){$('ymV36Error').textContent='متصفحك رفض تشغيل الميكروفون.'}
 }
+let usedDeepLink=false;
+function handleDeepLink(){
+ if(usedDeepLink||!canWrite())return;
+ let url;try{url=new URL(window.location.href)}catch(_){return}
+ const quick=url.searchParams.get('quick');
+ if(!['tasks','habits','calendar'].includes(quick))return;
+ usedDeepLink=true;
+ url.searchParams.delete('quick');
+ try{window.history.replaceState(null,'',url.pathname+url.search+url.hash)}catch(_){}
+ window.setTimeout(()=>api()?.goPage?.(quick),0);
+}
 function render(){
  if(!$('ymV36Today'))return;
- dashboard();
+ dashboard();handleDeepLink();
  if($('page-habits')?.classList.contains('on'))habitPanel();
  if($('page-books')?.classList.contains('on'))booksPanel();
  if($('page-coach')?.classList.contains('on'))coachPanel();
