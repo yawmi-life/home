@@ -1,0 +1,158 @@
+name: Build Free YAWMI Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/yawmi-android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: yawmi-android-v1
+  cancel-in-progress: false
+
+jobs:
+  android-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout public PWA source
+        uses: actions/checkout@v4
+
+      - name: Configure Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configure Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform and build tools
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Prepare artwork
+        shell: bash
+        run: |
+          mkdir -p android/app/src/main/res/drawable-nodpi
+          cp icon-512.png android/app/src/main/res/drawable-nodpi/yawmi_icon.png
+          file android/app/src/main/res/drawable-nodpi/yawmi_icon.png
+
+      - name: Prepare persistent signing identity or one-time first-release key
+        shell: bash
+        env:
+          STORED_KEY_B64: ${{ secrets.YAWMI_ANDROID_KEYSTORE_B64 }}
+          STORED_KEY_PASS: ${{ secrets.YAWMI_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEY_PATH="$RUNNER_TEMP/yawmi-release.jks"
+          if [[ -n "$STORED_KEY_B64" && -n "$STORED_KEY_PASS" ]]; then
+            printf '%s' "$STORED_KEY_B64" | base64 -d > "$KEY_PATH"
+            KEY_PASS="$STORED_KEY_PASS"
+            echo "Using existing private signing identity from GitHub Actions secrets"
+          else
+            KEY_PASS="$(openssl rand -hex 24)"
+            echo "::add-mask::$KEY_PASS"
+            keytool -genkeypair -noprompt -storetype PKCS12 -keystore "$KEY_PATH" \
+              -alias yawmi -keyalg RSA -keysize 3072 -validity 10000 \
+              -storepass "$KEY_PASS" -keypass "$KEY_PASS" \
+              -dname "CN=YAWMI LifeOS,OU=Android,O=YAWMI,C=SA"
+            mkdir -p "$RUNNER_TEMP/signing-backup"
+            cp "$KEY_PATH" "$RUNNER_TEMP/signing-backup/yawmi-release.jks"
+            printf '%s\n' "$KEY_PASS" > "$RUNNER_TEMP/signing-backup/signing-password.txt"
+            printf 'Protect these two files. To update the installed APK use the same keystore and password.\n' \
+              > "$RUNNER_TEMP/signing-backup/README.txt"
+            tar -C "$RUNNER_TEMP/signing-backup" -czf "$RUNNER_TEMP/signing-backup.tar.gz" .
+            openssl cms -encrypt -binary -aes256 \
+              -in "$RUNNER_TEMP/signing-backup.tar.gz" \
+              -out "$RUNNER_TEMP/signing-backup.cms" -outform DER \
+              android/signing-backup-public-cert.pem
+            echo "A public-key encrypted signing backup was created (NEVER upload the plaintext keystore)"
+          fi
+          echo "YAWMI_KEYSTORE_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          echo "YAWMI_KEYSTORE_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+          echo "YAWMI_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+          keytool -list -keystore "$KEY_PATH" -alias yawmi -storepass "$KEY_PASS" >/dev/null
+
+      - name: Generate Digital Asset Links deployment file
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/android-public-files"
+          FINGERPRINT="$(keytool -list -v -keystore "$YAWMI_KEYSTORE_PATH" -alias yawmi -storepass "$YAWMI_KEYSTORE_PASSWORD" | sed -n 's/.*SHA256: //p' | head -1)"
+          if [[ -z "$FINGERPRINT" ]]; then echo 'Missing signing SHA256' >&2; exit 1; fi
+          export FINGERPRINT
+          python3 - <<'PY'
+          import json,os
+          target=[{"relation":["delegate_permission/common.handle_all_urls"],
+                   "target":{"namespace":"android_app","package_name":"com.yawmilife.app",
+                             "sha256_cert_fingerprints":[os.environ["FINGERPRINT"]]}}]
+          with open(os.environ["RUNNER_TEMP"]+"/android-public-files/assetlinks.json","w") as f:
+              json.dump(target,f,ensure_ascii=False,indent=2)
+          PY
+          echo "Android app signing fingerprint: $FINGERPRINT" >> "$GITHUB_STEP_SUMMARY"
+          echo "To verify fullscreen TWA, publish the generated assetlinks.json at https://yawmi-life.github.io/.well-known/assetlinks.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle -p android --no-daemon :app:assembleRelease --stacktrace
+          APK='android/app/build/outputs/apk/release/app-release.apk'
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -12
+          sha256sum "$APK" | tee "$RUNNER_TEMP/android-public-files/apk-sha256.txt"
+
+      - name: Preserve Android signing key backup encrypted for the owner
+        uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('android/signing-backup-public-cert.pem') != '' }}
+        with:
+          name: YAWMI_ANDROID_ENCRYPTED_SIGNING_BACKUP_DO_NOT_DELETE
+          path: ${{ runner.temp }}/signing-backup.cms
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: Upload APK and assetlinks for manual testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: YAWMI_ANDROID_V1_SIGNED_APK
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            ${{ runner.temp }}/android-public-files/assetlinks.json
+            ${{ runner.temp }}/android-public-files/apk-sha256.txt
+          retention-days: 90
+
+      - name: Publish free public APK link on GitHub Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="android-v1.0.0"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release exists: refusing to overwrite an APK using a different signing key"
+          else
+            gh release create "$TAG" \
+              "$APK#YAWMI-LifeOS-v1.0.0.apk" \
+              "$RUNNER_TEMP/android-public-files/assetlinks.json#assetlinks.json" \
+              "$RUNNER_TEMP/android-public-files/apk-sha256.txt#apk-sha256.txt" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "يومي LifeOS — Android APK v1.0.0 (مجاني)" \
+              --notes-file android/RELEASE_NOTES.md \
+              --latest
+          fi
+          echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/YAWMI-LifeOS-v1.0.0.apk" >> "$GITHUB_STEP_SUMMARY"
