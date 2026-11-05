@@ -36,5 +36,14 @@ window.YawmiExtraAPI={
 <script src="../yawmi-life-core-v33.js"></script>
 <script src="../yawmi-life-growth-v33.js"></script>
 <script src="../yawmi-life-privacy-v33.js"></script>
-<script>document.addEventListener('DOMContentLoaded',()=>['calendar','reminders','notes','health','routines','planning','coach','privacy'].forEach(n=>window.YawmiLife.render(n)))</script>
+<script>
+document.addEventListener('click',event=>{
+ const section=event.target.closest('.page');
+ if(section){
+   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+   section.classList.add('on');
+ }
+},true);
+document.addEventListener('DOMContentLoaded',()=>['calendar','reminders','notes','health','routines','planning','coach','privacy'].forEach(n=>window.YawmiLife.render(n)));
+</script>
 </body></html>
