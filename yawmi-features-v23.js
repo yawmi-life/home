@@ -261,10 +261,11 @@ function doUndo(){
 function navigateShortcut(){
  if(!window.YawmiCloud?.ready||!api())return;
  const value=new URLSearchParams(location.search).get('quick');
- if(!['tasks','quran','focus','water'].includes(value))return;
+ if(!['tasks','quran','focus','water','calendar'].includes(value))return;
  try{history.replaceState(null,'',location.pathname)}catch(_){}
  if(value==='quran')api().goQuran();
  if(value==='tasks')api().goTasks?.();
+ if(value==='calendar')api().goPage?.('calendar');
  if(value==='focus'||value==='water'){api().goHome();const target=$(value==='focus'?'ymFocusPanel':'waterGlasses');target?.scrollIntoView({behavior:'smooth',block:'center'});}
 }
 function onAccountReady(){
