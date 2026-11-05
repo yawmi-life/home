@@ -46,7 +46,7 @@ const language=b=>isRealArabic(b)?'طبعة وعنوان بالعربية':b.lan
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let cat='self',lang='all',sorting='relevance',keyword='',books=[],started=false,expanded=false,loading=false,error='',showCount=24,loadingMore=false,hasMorePages=true,pageNumber=0;
 let generation=0,nextSlot=0,controller=null,detailToken=0,activeDetail=null;
-const memory=new Map(),cacheName='yawmi_books_public_v35';
+const memory=new Map(),cacheName='yawmi_books_public_v35ar2';
 function normalize(d){
  const key=workKey(d?.key),mainTitle=String(d?.title||'').trim();
  const editions=Array.isArray(d?.editions?.docs)?d.editions.docs:[];
@@ -111,7 +111,7 @@ function googleQueries(){
 }
 async function search(force=false){
  const seq=++generation;controller?.abort();controller=new AbortController();
- const key=JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v35']);
+ const key=JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v35ar2']);
  const existing=fromCache(key);showCount=24;error='';pageNumber=0;loadingMore=false;hasMorePages=true;
  if(!navigator.onLine){books=existing||[];started=true;loading=false;
   error=existing?'أوفلاين: دي نتائج بحث محفوظة من قبل.':'البحث عن كتب جديدة يحتاج اتصال بالإنترنت. كتبك المحفوظة متاحة بدون إنترنت.';render();return}
@@ -195,7 +195,7 @@ async function loadMore(){
   if(!old||(b.summary&&Arabic.test(b.summary)&&!(old.summary&&Arabic.test(old.summary))))merged.set(key,b);
  }
  books=[...merged.values()].map((b,i)=>({...b,index:i}));
- if(books.length)saveCache(JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v35']),books);
+ if(books.length)saveCache(JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v35ar2']),books);
  if(anySuccess){pageNumber=page;hasMorePages=page<10&&extra.length>0;}
  else error='المصادر لم تستجب عند تحميل المزيد. تقدر تعيد المحاولة بعد شوية.';
  loadingMore=false;render();
