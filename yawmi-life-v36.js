@@ -66,16 +66,32 @@ function habitProgress(s,h,d){
 }
 function habitDone(s,h,d){return habitProgress(s,h,d)>=(h.id==='water'?(s.waterPrefs?.goalMl||2000):Math.max(1,Number(h.target)||1))}
 function nextCalendar(s,reference){
- const today=new Date(reference+'T00:00:00').getTime(),events=[...(s.lifeCalendar||[]),...(s.lifeReminders||[])];
- return events.filter(e=>validDate(e.date)&&!e.done&&new Date(e.date+'T'+(validTime(e.time)?e.time:'09:00')+':00').getTime()>=today)
- .sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||'')))[0]||null;
+ // Never mutate the stored reminder when computing its next occurrence.
+ const today=new Date(reference+'T00:00:00').getTime(),events=[...(s.lifeCalendar||[]),...(s.lifeReminders||[])],upcoming=[];
+ for(const event of events){
+  if(!event||!validDate(event.date)||event.hidden||(event.done&&event.repeat!=='yearly'))continue;
+  let date=event.date;
+  if(event.repeat==='yearly'){
+   const monthDay=event.date.slice(5),start=Number(reference.slice(0,4));
+   date='';
+   for(let year=Math.max(start,Number(event.date.slice(0,4)));year<=start+4;year++){
+    const candidate=year+'-'+monthDay;
+    if(validDate(candidate)&&new Date(candidate+'T23:59:59').getTime()>=today){date=candidate;break}
+   }
+   if(!date)continue;
+  }
+  if(new Date(date+'T'+(validTime(event.time)?event.time:'09:00')+':00').getTime()>=today)
+   upcoming.push({...event,date});
+ }
+ return upcoming.sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||'')))[0]||null;
 }
 function syncLabel(){
  const c=cloud();
  if(!c?.configured)return 'تجربة محلية · لا توجد مزامنة سحابية';
  if(c.conflict)return 'تعارض مزامنة · افتح الحساب لحله';
  if(!c.ready)return 'جارٍ تحميل بيانات الحساب';
- if(c.pending)return 'تعديلات قيد المزامنة مع السحابة';
+ if(!navigator.onLine)return 'لا يوجد اتصال بالإنترنت · آخر نسخة سحابية مؤكدة '+String(c.revision||'—');
+ if(c.pending||c.working)return 'تعديلات قيد المزامنة مع السحابة';
  return 'تمت مزامنة البيانات · نسخة '+String(c.revision||'—');
 }
 function getFacts(s,d=day()){
