@@ -154,3 +154,17 @@ test('offline status never incorrectly claims current cloud synchronization',asy
  await page.evaluate(()=>{window.YawmiCloud.pending={};window.YawmiLifeV36.render()});
  await expect(page.locator('#ymV36Today')).toContainText('قيد المزامنة');
 });
+
+test('Android widget landing deep link keeps preferred Journal skin and query after redirect',async({page})=>{
+ await page.goto('/index.html');
+ await page.evaluate(()=>localStorage.setItem('yawmi_v9_preferred_skin','02_JOURNAL_Editorial.html'));
+ await page.goto('/index.html?source=widget&quick=habits',{waitUntil:'domcontentloaded'});
+ await expect.poll(()=>new URL(page.url()).pathname.endsWith('/02_JOURNAL_Editorial.html')).toBe(true);
+ expect(new URL(page.url()).searchParams.get('quick')).toBe('habits');
+});
+test('Android widget first launch routes to a valid default design without requiring stored preferences',async({page})=>{
+ await page.goto('/index.html');
+ await page.evaluate(()=>localStorage.removeItem('yawmi_v9_preferred_skin'));
+ await page.goto('/index.html?source=widget&quick=tasks',{waitUntil:'domcontentloaded'});
+ await expect.poll(()=>new URL(page.url()).pathname.endsWith('/01_ATLAS_Executive.html')).toBe(true);
+});
