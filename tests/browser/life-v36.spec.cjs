@@ -121,9 +121,11 @@ test('Android widget deep link routes to tasks only after account access and cle
  await expect.poll(()=>page.evaluate(()=>window.__view)).toBe('tasks');
  expect(new URL(page.url()).searchParams.has('quick')).toBe(false);
 });
-test('Android widget deep link does not bypass the login gate',async({page})=>{
- await page.addInitScript(()=>{Object.defineProperty(window,'__willTestLogin',{value:true})});
- await page.goto('/tests/life-v36.html?quick=calendar');
+test('Android widget link waits for authenticated cloud snapshot',async({page})=>{
+ await page.goto('/tests/life-v36.html?quick=calendar&locked=1');
+ await expect.poll(()=>page.evaluate(()=>window.__view)).toBe('home');
+ expect(new URL(page.url()).searchParams.has('quick')).toBe(true);
+ await page.evaluate(()=>{window.YawmiCloud.ready=true;window.YawmiLifeV36.render()});
  await expect.poll(()=>page.evaluate(()=>window.__view)).toBe('calendar');
- expect(await page.evaluate(()=>window.YawmiCloud.currentUser?.id)).toBe('qa-user');
+ expect(new URL(page.url()).searchParams.has('quick')).toBe(false);
 });
