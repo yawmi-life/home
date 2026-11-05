@@ -146,7 +146,7 @@ async function search(force=false){
 }
 function bookCard(b){
  return '<article class="ym-catalog-card"><button type="button" class="ym-catalog-open" data-catalog-detail="'+safe(b.key)+'" aria-label="تفاصيل كتاب '+safe(b.title)+'">'+
- '<span class="ym-catalog-cover">'+(cover(b.coverId)?'<img src="'+cover(b.coverId)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<span aria-hidden="true">📖</span>')+'</span>'+
+ '<span class="ym-catalog-cover">'+(imageOf(b)?'<img src="'+safe(imageOf(b))+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<span aria-hidden="true">📖</span>')+'</span>'+
  '<span class="ym-catalog-book-info"><b>'+safe(b.title)+'</b><small>'+safe(b.author||'المؤلف غير مذكور')+'</small>'+
  '<span class="ym-catalog-rating">'+safe(rating(b))+'</span><small>'+(b.pages?'≈ '+fmt(b.pages)+' صفحة':'عدد الصفحات غير متوفر')+' · '+safe(language(b))+'</small></span></button>'+
  '<div class="ym-catalog-foot"><span>'+(b.year?fmt(b.year):'سنة غير متوفرة')+'</span>'+
@@ -155,24 +155,24 @@ function bookCard(b){
 function render(){
  const root=$('ymBookCatalog');if(!root)return;
  const selected=cats.find(c=>c[0]===cat)||cats[0];
- root.innerHTML='<div class="ym-catalog-heading"><div><span class="section-eyebrow">DISCOVER BOOKS</span><h3>🔎 اكتشف كتبًا من كل المجالات</h3><p>ابحث عن عنوان أو مؤلف، أو استكشف ترشيحات من الكتب العربية والأجنبية بتقييماتها الحقيقية.</p></div><small>بيانات Open Library</small></div>'+
+ root.innerHTML='<div class="ym-catalog-heading"><div><span class="section-eyebrow">DISCOVER BOOKS</span><h3>🔎 اكتشف كتبًا من كل المجالات</h3><p>ابحث بالعربي أو الإنجليزي، وشوف الطبعة العربية الأصلية أو المترجمة لما تكون متاحة في الفهرس.</p></div><small>Google Books + Open Library</small></div>'+
  '<form id="ymCatalogSearch" role="search" class="ym-catalog-search"><label for="ymCatalogQuery">ابحث عن كتاب أو مؤلف</label><div><input id="ymCatalogQuery" type="search" maxlength="90" value="'+safe(keyword)+'" placeholder="مثال: أرض زيكولا / Atomic Habits / نجيب محفوظ">'+
  '<button class="btn" type="submit">بحث</button></div></form>'+
  '<div class="ym-catalog-controls"><label>المجال<select id="ymCatalogCategory">'+cats.map(c=>'<option value="'+c[0]+'" '+(cat===c[0]?'selected':'')+'>'+safe(c[1])+'</option>').join('')+'</select></label>'+
- '<label>اللغة<select id="ymCatalogLanguage"><option value="all" '+(lang==='all'?'selected':'')+'>عربي وأجنبي</option><option value="ar" '+(lang==='ar'?'selected':'')+'>عربي أو له طبعة عربية</option><option value="foreign" '+(lang==='foreign'?'selected':'')+'>أجنبي</option></select></label>'+
+ '<label>اللغة<select id="ymCatalogLanguage"><option value="all" '+(lang==='all'?'selected':'')+'>عربي وأجنبي</option><option value="ar" '+(lang==='ar'?'selected':'')+'>عربي: طبعات بعناوين عربية</option><option value="foreign" '+(lang==='foreign'?'selected':'')+'>أجنبي</option></select></label>'+
  '<label>الترتيب<select id="ymCatalogSort"><option value="popular" '+(sorting==='popular'?'selected':'')+'>الأكثر شهرة</option><option value="rating" '+(sorting==='rating'?'selected':'')+'>الأعلى تقييمًا</option><option value="relevance" '+(sorting==='relevance'?'selected':'')+'>الأقرب للبحث</option></select></label></div>'+
  '<div class="ym-catalog-categories" role="group" aria-label="مجالات الكتب">'+(expanded?cats:cats.slice(0,8)).map(c=>
  '<button type="button" data-catalog-category="'+c[0]+'" class="'+(cat===c[0]?'active':'')+'">'+safe(c[1])+'</button>').join('')+
  '<button type="button" data-catalog-expand>'+(expanded?'إظهار أقل':'كل المجالات ('+cats.length+')')+'</button></div>'+
  '<div class="ym-catalog-results-title"><h4>'+(keyword?'نتائج: '+safe(keyword):'كتب في '+safe(selected[1]))+'</h4>'+
- '<span role="status" aria-live="polite">'+(loading?'جاري البحث…':started?fmt(books.length)+' نتيجة ضمن العينة':'اختار مجالًا أو ابحث')+'</span></div>'+
+ '<span role="status" aria-live="polite">'+(loading?'جاري البحث…':started?fmt(books.length)+' نتيجة من المصادر المتاحة':'اختار مجالًا أو ابحث')+'</span></div>'+
  (error?'<p class="ym-catalog-warning">'+safe(error)+' <button type="button" data-catalog-retry>إعادة المحاولة</button></p>':'')+
  (loading?'<div class="ym-catalog-skeleton" aria-label="تحميل الكتب">جاري تحميل الكتب من المصدر…</div>':
  started?(books.length?'<div class="ym-catalog-grid">'+order(books).slice(0,showCount).map(bookCard).join('')+'</div>'+
  (books.length>showCount?'<button type="button" class="btn soft ym-catalog-more" data-catalog-more>عرض المزيد</button>':''):
  '<div class="ym-empty">لا توجد كتب مطابقة لهذه الشروط في الفهرس المتاح. جرّب مجالًا أو كلمات مختلفة.</div>'):
  '<p class="muted">اختار مجالًا من القائمة؛ هتشوف أفضل النتائج حسب البيانات المتاحة.</p>')+
- '<p class="ym-catalog-disclaimer">التقييمات وعدد المراجعات من Open Library فقط. الصفحة تقديرية وتختلف حسب الطبعة. الشهرة تعتمد على مؤشرات القراءة والتقييمات وعدد الطبعات، وترتيب الكتب داخل النتائج المسترجعة وليس كل الكتب عالميًا.</p>';
+ '<p class="ym-catalog-disclaimer">النتائج والنبذات من Google Books وOpen Library. اختيار «عربي» يعرض الكتب ذات طبعة وعنوان عربي مسجلين في المصدر، وليس ترجمة آلية لعنوان أجنبي. لا تضمن الفهارس تغطية كل الكتب أو توافر نبذة عربية.</p>';
 }
 function getDialog(){
  let el=$('ymCatalogDetail');if(el)return el;
@@ -188,24 +188,24 @@ function summaryText(x){
 }
 function dialogContent(b,about,done){
  return '<div class="ym-catalog-detail-layout"><div class="ym-catalog-detail-image">'+
- (cover(b.coverId)?'<img src="'+cover(b.coverId)+'" alt="" referrerpolicy="no-referrer">':'📖')+'</div><div>'+
+ (imageOf(b)?'<img src="'+safe(imageOf(b))+'" alt="" referrerpolicy="no-referrer">':'📖')+'</div><div>'+
  '<h2>'+safe(b.title)+'</h2><p><b>المؤلف: </b>'+safe(b.author||'غير مذكور')+'</p>'+
  '<p><b>عدد الصفحات: </b>'+(b.pages?'حوالي '+fmt(b.pages)+' حسب الطبعة':'غير متوفر')+'</p>'+
  '<p><b>تقييم القراء: </b>'+safe(rating(b))+'</p>'+
  '<p><b>اللغة: </b>'+safe(language(b))+(b.year?' · نشر أول مرة '+fmt(b.year):'')+'</p>'+
  '<h3>نبذة عن الكتاب</h3>'+
- (about?'<p class="ym-catalog-description">'+safe(about)+'</p>':
+ (about&&(!b.googleId||lang!=='ar'||Arabic.test(about))?'<p class="ym-catalog-description">'+safe(about)+'</p>':
  '<p class="muted">'+(done?'لا توجد نبذة موثقة لهذا العنوان في المصدر. يمكنك مراجعة صفحة الكتاب.':'جاري جلب النبذة من المصدر…')+'</p>')+
  '<div class="ym-catalog-detail-actions"><button class="btn" type="button" data-catalog-save="'+safe(b.key)+'">＋ أضف لمكتبتي</button>'+
- '<a href="https://openlibrary.org'+safe(b.key)+'" rel="noopener noreferrer" target="_blank">تفاصيله وخيارات القراءة ↗</a></div>'+
+ '<a href="'+safe(externalBookUrl(b))+'" rel="noopener noreferrer" target="_blank">تفاصيل الطبعة من المصدر ↗</a></div>'+
  '<p class="muted mini">'+(b.access==='public'||b.scan?'قد تتوفر نسخة قابلة للمعاينة عبر المصدر، وفق حقوق النشر.':'توافر المعاينة أو الاستعارة يعتمد على حقوق النسخة.')+'</p>'+
- '<small class="muted">النبذة والبيانات مصدرها Open Library. لا يوفر يومي نسخًا مقرصنة للكتب.</small></div></div>';
+ '<small class="muted">البيانات من '+safe(b.source||'Open Library')+'. إن لم تتوفر نبذة عربية موثقة، لا يختلق يومي محتوى الكتاب.</small></div></div>';
 }
 async function showBook(key){
  const b=books.find(x=>x.key===key);if(!b)return;
  const dlg=getDialog(),seq=++detailToken;activeDetail=b;
  $('ymCatalogDetailBody').innerHTML=dialogContent(b,'',false);if(!dlg.open)dlg.showModal();
- const cached=memory.get('work:'+key);
+ const cached=b.googleId?b.summary:memory.get('work:'+key);
  if(cached!==undefined){$('ymCatalogDetailBody').innerHTML=dialogContent(b,cached,true);return}
  if(!navigator.onLine){$('ymCatalogDetailBody').innerHTML=dialogContent(b,'',true);return}
  try{const v=await json('https://openlibrary.org'+key+'.json');
@@ -221,8 +221,8 @@ function addBook(key){
  const fn=window.YawmiExtras?.addFromCatalog;
  if(!fn)return window.YawmiExtraAPI?.notify?.('افتح مكتبتي ثم جرّب إضافة الكتاب من جديد');
  const dlg=$('ymCatalogDetail');if(dlg?.open)dlg.close();
- fn({key:b.key,title:b.title,author:b.author,pages:b.pages,coverId:b.coverId,
-   rating:b.rating,reviews:b.reviews,source:'Open Library'});
+ fn({key:b.key,title:b.title,author:b.author,pages:b.pages,coverId:b.coverId,coverUrl:b.coverUrl||null,
+   rating:b.rating,reviews:b.reviews,googleId:b.googleId||null,source:b.source||'Open Library'});
 }
 function visible(){
  if(!$('ymBookCatalog'))return;
@@ -254,7 +254,7 @@ function init(){
  window.addEventListener('online',()=>{if(started&&error)search(true)});
  if($('page-books')?.classList.contains('active'))visible();
 }
-window.YawmiBookCatalog={render,visible,search,normalize,order,categoryCount:cats.length,
+window.YawmiBookCatalog={render,visible,search,normalize,googleBook,isRealArabic,aliasOf,order,categoryCount:cats.length,
  getState:()=>({cat,lang,sorting,loaded:started,books:books.length,loading})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
