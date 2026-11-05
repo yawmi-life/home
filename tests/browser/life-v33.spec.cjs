@@ -28,7 +28,7 @@ test('calendar merges source tasks and habits with manually created appointment 
 });
 test('reminder is saved as one-time or yearly and persists without requesting notifications',async({page})=>{
  await boot(page);
- await page.locator('#ymLifeReminders [data-life-rem-new]').first().click();
+ await page.locator('#ymLifeCalendar [data-life-rem-new]').first().click();
  await page.locator('#ylRemTitle').fill('تجديد اشتراك');
  await page.locator('#ylRemTime').fill('08:15');
  await page.locator('#ylRemRepeat').selectOption('yearly');
@@ -161,7 +161,7 @@ test('new suite passes serious and critical WCAG checks in browser fixture',asyn
  expect(violations).toEqual([]);
 });
 test('three native themes keep home minimal and expose all new sections in the sidebar',async({page})=>{
- const routes=['calendar','reminders','notes','health','routines','planning','coach','privacy'];
+ const routes=['calendar','notes','health','routines','planning','coach','privacy'];
  for(const path of ['01_ATLAS_Executive.html','02_JOURNAL_Editorial.html','03_QUEST_RPG.html']){
   await page.goto('/'+path,{waitUntil:'domcontentloaded'});
   for(const t of routes){
