@@ -1,0 +1,10 @@
+/* YAWMI V35 Calendar integrations — user-friendly consent states and mobile layout */
+.yl-calendar-connect{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.yl-calendar-connect .yl-action{min-height:39px;text-align:center;line-height:1.6}
+.yl-google-status{font-size:12px;line-height:1.9;color:var(--text);background:var(--accent-faint);border-radius:9px;padding:10px;margin:12px 0}
+#ymGoogleCalendarControls,#ymPushControls{align-self:stretch}
+#ymGoogleCalendarControls>.yl-toolbar,#ymPushControls>.yl-toolbar{margin-bottom:9px}
+#ymGoogleCalendarControls .yl-callout{padding:12px;font-size:11px;line-height:1.8;color:var(--text);border-radius:12px;margin:10px 0}
+.ym-catalog-grid .ym-catalog-card .ym-catalog-book-info{min-width:0}
+.ym-catalog-grid .ym-catalog-card .ym-catalog-book-info>b{overflow-wrap:anywhere}
+@media(max-width:570px){#ymGoogleCalendarControls,#ymPushControls{padding:14px}.yl-calendar-connect .yl-action{flex:1 1 160px}}
