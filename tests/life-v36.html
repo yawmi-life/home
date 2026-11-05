@@ -19,7 +19,7 @@ window.__state=stored?JSON.parse(stored):{version:7,demo:false,profile:{name:'ا
  lifeNotes:[],books:[{id:'book1',title:'قوة العادات',status:'reading',currentPage:20,totalPages:250}],
  finance:{accounts:[],transactions:[]}};
 window.__saveCount=0;window.__failSave=false;window.__notices=[];window.__view='home';
-window.YawmiCloud={configured:true,ready:true,currentUser:{id:'qa-user'},pending:null,conflict:false,revision:3,
+window.YawmiCloud={configured:true,ready:!new URLSearchParams(location.search).has('locked'),currentUser:{id:'qa-user'},pending:null,conflict:false,revision:3,
  flush:async()=>{},refresh:async()=>{}};
 let seq=1;
 window.YawmiExtraAPI={
