@@ -15,7 +15,7 @@ test('unified calendar reads original tasks, habits, events and recurring bills 
  const {L,s}=boot({tasks:[{id:'t',title:'مهمة يومية',repeat:'daily',date:'2026-01-01'}],
  habits:[{id:'h',title:'عادة يومية',repeat:'daily',target:1}],
  finance:{transactions:[],recurring:[{id:'rent',title:'إيجار',day:5}]}});
- s.lifeCalendar.push({id:'evt',title:'مقابلة',date:'2026-11-05',time:'09:00'});
+ L.state();s.lifeCalendar.push({id:'evt',title:'مقابلة',date:'2026-11-05',time:'09:00'});
  const rows=L.itemsOn('2026-11-05');
  assert.ok(rows.some(x=>x.source==='task'&&x.title==='مهمة يومية'));
  assert.ok(rows.some(x=>x.source==='habit'));
