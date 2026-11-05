@@ -1,0 +1,48 @@
+/* YAWMI V34 — personal section visibility and account-balance reconciliation */
+.sidebar [data-tab][hidden],.bottom-nav [data-tab][hidden],#yawmiMenuDrawer [data-yam-action][hidden]{display:none!important}
+.ym-section-manage-btn{display:flex;align-items:center;gap:10px;width:100%;border:1px dashed var(--border);border-radius:12px;background:var(--panel2);color:var(--text);font-size:12px;font-weight:800;padding:12px 13px;margin:5px 0 14px;text-align:right;flex-shrink:0;cursor:pointer}
+.ym-section-manage-btn strong{margin-inline-start:auto;border-radius:30px;padding:2px 7px;background:var(--accent-faint);color:var(--accent);font-size:10px}
+.ym-sections-dialog{position:fixed;inset:0;margin:auto;width:min(720px,95vw);max-height:90dvh;max-width:95vw;overflow:auto;background:var(--panel,var(--surface));border-radius:20px;color:var(--text);padding:21px;border:1px solid var(--border);box-shadow:0 25px 100px rgba(0,0,0,.28)}
+.ym-sections-dialog::backdrop{background:rgba(10,14,28,.72)}
+.ym-sections-header{display:flex;gap:12px;align-items:start;justify-content:space-between}
+.ym-sections-header>div>span{font-size:10px;letter-spacing:1px;font-weight:850;color:var(--accent)}
+.ym-sections-header h2{font-size:clamp(19px,3vw,24px);margin:6px 0;color:var(--text);line-height:1.5}
+.ym-sections-header p{font-size:12px;color:var(--muted);line-height:1.9;max-width:590px;margin:0 0 12px}
+.ym-sections-header>button{border:1px solid var(--border);border-radius:50%;width:32px;height:32px;flex:0 0 32px;background:var(--surface);color:var(--text)}
+.ym-sections-summary{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--muted)}
+.ym-sections-summary span{font-size:11px;display:flex;gap:5px;align-items:center}
+.ym-sections-summary b{font-size:14px;color:var(--accent)}
+.ym-sections-scroll{display:grid;grid-template-columns:1fr 1fr;gap:13px;min-height:120px;align-items:start}
+.ym-sections-block{padding:13px;border:1px solid var(--border);border-radius:14px;min-width:0;background:var(--surface)}
+.ym-sections-block>div:first-child{margin-bottom:10px}
+.ym-sections-block h3{font-size:14px;color:var(--text);margin:0}
+.ym-sections-block small{color:var(--muted);font-size:10px}
+.ym-sections-hidden{background:var(--accent-faint)}
+.ym-section-tile{display:flex;gap:9px;align-items:center;border-bottom:1px solid var(--border);padding:10px 0;min-width:0}
+.ym-section-tile:last-child{border-bottom:0}
+.ym-section-tile-icon{display:grid;place-items:center;width:33px;height:33px;flex:0 0 33px;border-radius:11px;font-size:17px;background:var(--panel,var(--surface))}
+.ym-section-tile>div{flex:1;min-width:0}
+.ym-section-tile strong{font-size:11px;color:var(--text);display:block;line-height:1.5}
+.ym-section-tile small{display:block;margin-top:2px}
+.ym-section-tile button{font-size:10px;border-radius:8px;padding:7px;border:1px solid var(--border);color:var(--text);background:var(--panel,var(--surface));flex:0 0 auto}
+.ym-section-tile button.ym-section-restore{background:var(--accent);border-color:var(--accent);color:#fff}
+.ym-sections-footer{display:flex;gap:9px;justify-content:space-between;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
+.ym-sections-footer button{border:1px solid var(--border);border-radius:10px;padding:9px 14px;font-size:12px;background:var(--surface);color:var(--text);font-weight:750}
+.ym-sections-footer .ym-sections-done{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ym-sections-footer button:disabled{opacity:.45}
+.ym-sections-empty{color:var(--muted);font-size:11px;line-height:1.8}
+.ym-money-account-edit{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:8px;padding:7px 8px;font-size:10px;font-weight:800;cursor:pointer;margin-top:6px}
+.ym-money-adjustment-history{margin-top:12px;color:var(--muted);font-size:11px}
+.ym-money-adjustment-history summary{cursor:pointer;color:var(--text);font-weight:750}
+.ym-money-adjustment-history>div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border);padding:9px 0}
+.ym-money-adjustment-history b{font-size:11px;color:var(--text)}
+.ym-onboard h3{font-size:14px;font-weight:850;color:#292044;margin:15px 0 7px}
+.ym-onboard h3 small{font-size:10px;color:#706484}
+.ym-onboard #ymOnboardChoices{max-height:186px}
+.ym-onboard #ymOnboardTaskChoices{max-height:166px}
+.ym-onboard .ym-choices label{cursor:pointer}
+.ym-onboard .ym-choices label:has(input:checked){border-color:#8063d9;background:#f2edff}
+.ym-onboard-feedback{padding:10px 12px!important;border-radius:10px;background:#f0ecff;border:1px solid #d9caf4;color:#342857!important;font-size:11px!important;line-height:1.8;min-height:39px}
+.ym-onboard-feedback[data-kind="error"]{background:#fff0ef;border-color:#eea9a3;color:#962f37!important;font-weight:850}
+@media(max-width:620px){.ym-sections-scroll{grid-template-columns:1fr}.ym-sections-dialog{padding:15px}.ym-section-tile button{min-width:65px}.ym-section-manage-btn{padding:11px}.ym-onboard .ym-choices{grid-template-columns:1fr 1fr;max-height:160px}.ym-onboard{padding:17px;max-height:92dvh}}
+@media(max-width:395px){.ym-onboard .ym-choices{grid-template-columns:1fr}}
