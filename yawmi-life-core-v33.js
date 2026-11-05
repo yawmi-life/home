@@ -57,7 +57,7 @@ function taskActive(t,d){
  }
 }
 function habitActive(h,d){
- if(!h?.title||h.active===false)return false;
+ if(!h?.title||h.active===false||Array.isArray(h.pausedDates)&&h.pausedDates.includes(d))return false;
  const dow=toDate(d).getDay(),base=h.created?ymd(new Date(h.created)):null;
  if(base&&d<base)return false;
  switch(h.repeat){
