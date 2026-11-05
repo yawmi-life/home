@@ -16,7 +16,7 @@ const cats=[
 ['children','الأطفال واليافعون','juvenile_fiction'],['engineering','الهندسة','engineering'],
 ['environment','البيئة والطبيعة','environmental_science'],['law','القانون','law'],['cooking','الطبخ','cooking'],
 ['sports','الرياضة','sports']];
-const fields='key,title,author_name,cover_i,ratings_average,ratings_count,number_of_pages_median,edition_count,first_publish_year,language,ebook_access,public_scan_b,want_to_read_count,already_read_count,currently_reading_count';
+const fields='key,title,author_name,cover_i,ratings_average,ratings_count,number_of_pages_median,edition_count,first_publish_year,language,ebook_access,public_scan_b,want_to_read_count,already_read_count,currently_reading_count,editions,editions.key,editions.title,editions.language,editions.cover_i,editions.number_of_pages';
 const Arabic=/[\u0600-\u06FF]/;
 const normalizedTitle=x=>String(x||'').normalize('NFKC').toLowerCase().replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[^\u0621-\u064Aa-z0-9]+/g,' ').trim();
 const aliases=[['العادات الذرية','Atomic Habits'],['فن اللامبالاة','The Subtle Art of Not Giving a F'],['قوة العادات','The Power of Habit'],['العادات السبع','The 7 Habits of Highly Effective People'],['الأب الغني والأب الفقير','Rich Dad Poor Dad'],['العمل العميق','Deep Work']];
@@ -44,20 +44,26 @@ const cover=x=>count(x)?'https://covers.openlibrary.org/b/id/'+count(x)+'-M.jpg'
 const rating=b=>b.rating==null?'⭐ لا يوجد تقييم موثّق':'⭐ '+b.rating.toFixed(1)+'/5 · '+fmt(b.reviews)+' تقييم';
 const language=b=>isRealArabic(b)?'طبعة وعنوان بالعربية':b.langs?.includes('ara')?'له طبعة عربية؛ عنوان المصدر غير مترجم':b.langs?.length?'أجنبي':'اللغة غير محددة';
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-let cat='self',lang='all',sorting='relevance',keyword='',books=[],started=false,expanded=false,loading=false,error='',showCount=24;
+let cat='self',lang='all',sorting='relevance',keyword='',books=[],started=false,expanded=false,loading=false,error='',showCount=24,loadingMore=false,hasMorePages=true,pageNumber=0;
 let generation=0,nextSlot=0,controller=null,detailToken=0,activeDetail=null;
 const memory=new Map(),cacheName='yawmi_books_public_v35';
 function normalize(d){
- const key=workKey(d?.key),title=String(d?.title||'').trim();
+ const key=workKey(d?.key),mainTitle=String(d?.title||'').trim();
+ const editions=Array.isArray(d?.editions?.docs)?d.editions.docs:[];
+ // The work can have an English title while an actual Arabic edition exists.
+ // Use the exact provider edition title, never translate or manufacture an edition.
+ const actualArabic=editions.find(row=>Arabic.test(String(row?.title||''))&&
+  (Array.isArray(row?.language)?row.language.includes('ara'):String(row?.language||'')==='ara'));
+ const title=String(actualArabic?.title||mainTitle).trim();
  if(!key||!title)return null;
  const reviews=count(d.ratings_count),r=Number(d.ratings_average);
  return {key,source:'Open Library',title:title.slice(0,190),
  author:Array.isArray(d.author_name)?d.author_name.slice(0,3).map(x=>String(x).slice(0,100)).join('، '):'',
- coverId:count(d.cover_i),pages:Math.min(100000,count(d.number_of_pages_median)),
+ coverId:count(actualArabic?.cover_i)||count(d.cover_i),pages:Math.min(100000,count(actualArabic?.number_of_pages)||count(d.number_of_pages_median)),
  rating:reviews&&r>=1&&r<=5?Number(r.toFixed(2)):null,reviews,
  year:count(d.first_publish_year),editions:count(d.edition_count),
  wants:count(d.want_to_read_count),read:count(d.already_read_count),reading:count(d.currently_reading_count),
- langs:Array.isArray(d.language)?d.language.map(x=>String(x)).slice(0,40):[],
+ langs:actualArabic?['ara',...(Array.isArray(d.language)?d.language:[])].slice(0,40):Array.isArray(d.language)?d.language.map(x=>String(x)).slice(0,40):[],
  access:String(d.ebook_access||''),scan:!!d.public_scan_b};
 }
 const pop=b=>Math.log1p(b.wants)*2.5+Math.log1p(b.read)*1.6+Math.log1p(b.reviews)*1.3+Math.log1p(b.editions);
@@ -106,7 +112,7 @@ function googleQueries(){
 async function search(force=false){
  const seq=++generation;controller?.abort();controller=new AbortController();
  const key=JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v35']);
- const existing=fromCache(key);showCount=24;error='';
+ const existing=fromCache(key);showCount=24;error='';pageNumber=0;loadingMore=false;hasMorePages=true;
  if(!navigator.onLine){books=existing||[];started=true;loading=false;
   error=existing?'أوفلاين: دي نتائج بحث محفوظة من قبل.':'البحث عن كتب جديدة يحتاج اتصال بالإنترنت. كتبك المحفوظة متاحة بدون إنترنت.';render();return}
  if(existing&&!force){books=existing;started=true;loading=false;render();return}
@@ -151,6 +157,49 @@ async function search(force=false){
  if(reason)error=successful?'بعض مصادر الكتب لم تستجب، وتظهر النتائج المتاحة.':reason;
  render();
 }
+function dedupKey(b){return lang==='ar'||Arabic.test(keyword)?'title:'+normalizedTitle(b.title):'id:'+b.key}
+function includeBook(b){
+ if(!b)return false;
+ if(lang==='ar'&&!isRealArabic(b))return false;
+ if(lang==='foreign'&&isRealArabic(b))return false;
+ if(Arabic.test(keyword)&&lang!=='foreign'&&!Arabic.test(b.title))return false;
+ return true;
+}
+async function loadMore(){
+ if(loading||loadingMore||!started)return;
+ showCount+=24;
+ if(showCount<=books.length){render();return}
+ if(!hasMorePages||!navigator.onLine){render();return}
+ loadingMore=true;render();
+ const seq=generation,page=pageNumber+1,extra=[];let anySuccess=false;
+ const signal=controller?.signal;
+ for(const term of googleQueries().slice(0,2)){
+  if(seq!==generation||signal?.aborted)return;
+  const url=new URL('https://www.googleapis.com/books/v1/volumes');
+  url.search=new URLSearchParams({q:term,maxResults:'40',startIndex:String(page*40),printType:'books',
+   ...(lang==='ar'?{langRestrict:'ar'}:{})}).toString();
+  try{const data=await json(url.toString(),signal);anySuccess=true;for(const d of data.items||[]){const b=googleBook(d);if(b)extra.push(b)}}
+  catch(err){if(seq!==generation||signal?.aborted)return}
+ }
+ for(const q of queries()){
+  if(seq!==generation||signal?.aborted)return;
+  const url=new URL('https://openlibrary.org/search.json');
+  url.search=new URLSearchParams({q,fields,offset:String(page*60),limit:'60',lang:lang==='ar'?'ar':'en'}).toString();
+  try{const data=await json(url.toString(),signal);anySuccess=true;for(const d of data.docs||[]){const b=normalize(d);if(b)extra.push(b)}}
+  catch(err){if(seq!==generation||signal?.aborted)return}
+ }
+ if(seq!==generation)return;
+ const merged=new Map(books.map(b=>[dedupKey(b),b]));
+ for(const b of extra.filter(includeBook)){
+  const key=dedupKey(b),old=merged.get(key);
+  if(!old||(b.summary&&Arabic.test(b.summary)&&!(old.summary&&Arabic.test(old.summary))))merged.set(key,b);
+ }
+ books=[...merged.values()].map((b,i)=>({...b,index:i}));
+ if(books.length)saveCache(JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v35']),books);
+ if(anySuccess){pageNumber=page;hasMorePages=page<10&&extra.length>0;}
+ else error='المصادر لم تستجب عند تحميل المزيد. تقدر تعيد المحاولة بعد شوية.';
+ loadingMore=false;render();
+}
 function bookCard(b){
  return '<article class="ym-catalog-card"><button type="button" class="ym-catalog-open" data-catalog-detail="'+safe(b.key)+'" aria-label="تفاصيل كتاب '+safe(b.title)+'">'+
  '<span class="ym-catalog-cover">'+(imageOf(b)?'<img src="'+safe(imageOf(b))+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<span aria-hidden="true">📖</span>')+'</span>'+
@@ -176,7 +225,7 @@ function render(){
  (error?'<p class="ym-catalog-warning">'+safe(error)+' <button type="button" data-catalog-retry>إعادة المحاولة</button></p>':'')+
  (loading?'<div class="ym-catalog-skeleton" aria-label="تحميل الكتب">جاري تحميل الكتب من المصدر…</div>':
  started?(books.length?'<div class="ym-catalog-grid">'+order(books).slice(0,showCount).map(bookCard).join('')+'</div>'+
- (books.length>showCount?'<button type="button" class="btn soft ym-catalog-more" data-catalog-more>عرض المزيد</button>':''):
+ ((books.length>showCount||hasMorePages)?'<button type="button" class="btn soft ym-catalog-more" data-catalog-more '+(loadingMore?'disabled':'')+'>'+(loadingMore?'جاري تحميل المزيد…':'عرض المزيد من الكتب')+'</button>':''):
  '<div class="ym-empty">لا توجد كتب مطابقة لهذه الشروط في الفهرس المتاح. جرّب مجالًا أو كلمات مختلفة.</div>'):
  '<p class="muted">اختار مجالًا من القائمة؛ هتشوف أفضل النتائج حسب البيانات المتاحة.</p>')+
  '<p class="ym-catalog-disclaimer">النتائج والنبذات من Google Books وOpen Library. اختيار «عربي» يعرض الكتب ذات طبعة وعنوان عربي مسجلين في المصدر، وليس ترجمة آلية لعنوان أجنبي. لا تضمن الفهارس تغطية كل الكتب أو توافر نبذة عربية.</p>';
@@ -254,14 +303,14 @@ function init(){
   if(b.dataset.catalogCategory){cat=b.dataset.catalogCategory;keyword='';return search()}
   if(b.hasAttribute('data-catalog-expand')){expanded=!expanded;return render()}
   if(b.hasAttribute('data-catalog-retry'))return search(true);
-  if(b.hasAttribute('data-catalog-more')){showCount+=24;return render()}
+  if(b.hasAttribute('data-catalog-more'))return loadMore()
   if(b.dataset.catalogDetail)return showBook(b.dataset.catalogDetail);
   if(b.dataset.catalogSave)return addBook(b.dataset.catalogSave);
  });
  window.addEventListener('online',()=>{if(started&&error)search(true)});
  if($('page-books')?.classList.contains('active'))visible();
 }
-window.YawmiBookCatalog={render,visible,search,normalize,googleBook,isRealArabic,aliasOf,order,categoryCount:cats.length,
+window.YawmiBookCatalog={render,visible,search,loadMore,normalize,googleBook,isRealArabic,aliasOf,order,categoryCount:cats.length,
  getState:()=>({cat,lang,sorting,loaded:started,books:books.length,loading})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
