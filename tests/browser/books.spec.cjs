@@ -14,6 +14,11 @@ const arabic=[
   ratings_average:4.777777,ratings_count:9,edition_count:1,first_publish_year:2010,language:['ara']}
 ];
 async function provider(page){
+ await page.route('https://www.googleapis.com/books/v1/volumes/vFnHDwAAQBAJ',route=>
+  route.fulfill({status:200,headers:{'access-control-allow-origin':'*','content-type':'application/json'},
+   body:JSON.stringify({id:'ARATOMIC123456',volumeInfo:{title:'العادات الذرية',authors:['جيمس كلير'],language:'ar',
+    description:'يتناول الكتاب كيف تساعد التغييرات الصغيرة في تطوير العادات، مع أفكار عملية لمتابعة السلوك.',
+    publishedDate:'2020',pageCount:320}})}));
  await page.route('https://www.googleapis.com/books/v1/volumes?**',route=>{
   const u=new URL(route.request().url()),q=u.searchParams.get('q')||'';
   const volume={id:'ARATOMIC123456',volumeInfo:{title:'العادات الذرية',authors:['جيمس كلير'],language:'ar',
