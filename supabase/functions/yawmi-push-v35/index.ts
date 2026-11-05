@@ -58,7 +58,7 @@ function matchesSchedule(e:YawmiItem,p:{date:string;time:string;year:number}){
 function candidateEvents(data:any,now:number,tz:string){
  if(!data?.lifeNotificationPrefs?.enabled)return [];
  const result:{key:string;label:string}[]=[];
- const records:[
+ const records=[
   {items:data.lifeCalendar,kind:"calendar"},
   {items:data.lifeReminders,kind:"reminder"},
  ];
