@@ -227,7 +227,7 @@ function applyOnboard(skip=false){
  const wantedTasks=[...new Set(taskIds)].filter(x=>choices.has(x));
  if(!wantedHabits.length&&!wantedTasks.length)return onboardHint('اختار عادة واحدة أو مهمة واحدة على الأقل، أو استخدم الإعدادات المقترحة.','error');
  if(wantedHabits.length>8||wantedTasks.length>6)return onboardHint('اختار بحد أقصى 8 عادات و6 مهام كبداية. تقدر تضيف الباقي بعدين.','error');
- const oldActives=(s.habits||[]).map(h=>[h.id,h.active]),oldTasks=s.tasks,oldGoals=s.goals,oldOnboard=s.onboarding;
+ const oldActives=(s.habits||[]).map(h=>[h.id,h.active]),oldTasks=s.tasks,oldGoals=Array.isArray(s.goals)?s.goals.slice():s.goals,oldOnboard=s.onboarding;
  const chosen=new Set(wantedHabits);
  for(const h of s.habits||[])h.active=chosen.has(h.id);
  const custom=(s.tasks||[]).filter(t=>!seededTaskIds.has(t.id)&&!onboardingTasks.some(p=>p.id===t.id));
