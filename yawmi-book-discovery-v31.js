@@ -93,38 +93,55 @@ async function json(url,signal){
  }finally{clearTimeout(end);signal?.removeEventListener('abort',forward)}
 }
 function queries(){
- const s=(cats.find(c=>c[0]===cat)||cats[0])[2];
- const q=keyword.trim()||'subject:'+s;
- if(lang==='ar')return [q+' AND language:ara'];
- if(lang==='foreign')return [q];
- if(/[\u0600-\u06FF]/.test(keyword))return [q];
- return [q,q+' AND language:ara'];
+ const subject=(cats.find(c=>c[0]===cat)||cats[0])[2],query=keyword.trim()||'subject:'+subject;
+ if(lang==='ar')return [query+' AND language:ara'];
+ if(lang==='foreign')return [query+' AND language:eng'];
+ return Arabic.test(keyword)?[query,query+' AND language:ara']:[query];
+}
+function googleQueries(){
+ const category=(cats.find(c=>c[0]===cat)||cats[0]),q=keyword.trim();
+ if(!q)return ['subject:'+category[2],...(lang==='ar'?[category[1]]:[])];
+ const alias=aliasOf(q);return alias&&alias!==q?[q,alias]:[q];
 }
 async function search(force=false){
  const seq=++generation;controller?.abort();controller=new AbortController();
- const key=JSON.stringify([cat,lang,keyword.toLowerCase().trim()]);
+ const key=JSON.stringify([cat,lang,keyword.toLowerCase().trim(),'v35']);
  const existing=fromCache(key);showCount=24;error='';
  if(!navigator.onLine){books=existing||[];started=true;loading=false;
   error=existing?'أوفلاين: دي نتائج بحث محفوظة من قبل.':'البحث عن كتب جديدة يحتاج اتصال بالإنترنت. كتبك المحفوظة متاحة بدون إنترنت.';render();return}
  if(existing&&!force){books=existing;started=true;loading=false;render();return}
  loading=true;render();const results=[];let successful=false,reason='';
+ for(const term of googleQueries().slice(0,2)){
+  if(seq!==generation)return;
+  const url=new URL('https://www.googleapis.com/books/v1/volumes');
+  url.search=new URLSearchParams({q:term,maxResults:'40',printType:'books',...(lang==='ar'?{langRestrict:'ar'}:{})}).toString();
+  try{const d=await json(url.toString(),controller.signal);successful=true;
+   for(const row of Array.isArray(d?.items)?d.items:[]){const b=googleBook(row);if(b)results.push(b)}
+  }catch(e){if(seq!==generation||controller.signal.aborted)return;reason=e.message||'Google Books غير متاح'}
+ }
  for(const q of queries()){
   if(seq!==generation)return;
   const url=new URL('https://openlibrary.org/search.json');
-  url.search=new URLSearchParams({q,fields,limit:'45',lang:lang==='ar'?'ar':'en'}).toString();
+  url.search=new URLSearchParams({q,fields,limit:'60',lang:lang==='ar'?'ar':'en'}).toString();
   try{const d=await json(url.toString(),controller.signal);successful=true;
-   for(const item of Array.isArray(d?.docs)?d.docs:[]){const b=normalize(item);if(b)results.push(b)}
-  }catch(e){if(seq!==generation||controller.signal.aborted)return;reason=e.message||'تعذر الوصول للمصدر'}
+   for(const row of Array.isArray(d?.docs)?d.docs:[]){const b=normalize(row);if(b)results.push(b)}
+  }catch(e){if(seq!==generation||controller.signal.aborted)return;reason=e.message||'Open Library غير متاح'}
  }
  if(seq!==generation)return;
- const distinct=new Map();for(const b of results)if(!distinct.has(b.key))distinct.set(b.key,b);
- books=[...distinct.values()];
- if(lang==='ar')books=books.filter(b=>b.langs.includes('ara')||/[\u0600-\u06FF]/.test(b.title));
- if(lang==='foreign')books=books.filter(b=>!b.langs.length||b.langs.some(x=>x!=='ara'));
- books=books.map((b,i)=>({...b,index:i}));if(books.length)saveCache(key,books);
+ const distinct=new Map();
+ for(const b of results){
+  if(lang==='ar'&&!isRealArabic(b))continue;
+  if(lang==='foreign'&&isRealArabic(b))continue;
+  if(Arabic.test(keyword)&&lang!=='foreign'&&!Arabic.test(b.title))continue;
+  const dedup=lang==='ar'||Arabic.test(keyword)?'title:'+normalizedTitle(b.title):'id:'+b.key;
+  const old=distinct.get(dedup);
+  if(!old||(b.summary&&Arabic.test(b.summary)&&!(old.summary&&Arabic.test(old.summary))))distinct.set(dedup,b);
+ }
+ books=[...distinct.values()].map((b,i)=>({...b,index:i}));
+ if(books.length)saveCache(key,books);
  if(!books.length&&existing)books=existing;
  started=true;loading=false;
- if(reason)error=successful?'بعض نتائج المصدر غير متاحة حاليًا.':reason;
+ if(reason)error=successful?'بعض مصادر الكتب لم تستجب، وتظهر النتائج المتاحة.':reason;
  render();
 }
 function bookCard(b){
