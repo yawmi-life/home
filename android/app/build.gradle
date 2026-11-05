@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.yawmilife.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.yawmilife.app'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+        resConfigs 'ar', 'en'
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('YAWMI_KEYSTORE_PATH') ?: '../../unused-signing.jks')
+            storePassword System.getenv('YAWMI_KEYSTORE_PASSWORD') ?: 'UNSET'
+            keyAlias 'yawmi'
+            keyPassword System.getenv('YAWMI_KEY_PASSWORD') ?: 'UNSET'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}
