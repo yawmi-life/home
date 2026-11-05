@@ -1,6 +1,6 @@
 /* YAWMI v11: static shell cache only. Never cache auth, Supabase API or personal data. */
-const CACHE='yawmi-v34-public-shell';
-const STATIC=['index.html','auth.html','01_ATLAS_Executive.html','02_JOURNAL_Editorial.html','03_QUEST_RPG.html','cloud.js','yawmi-offline-v1.js','yawmi-seasons-v1.js','yawmi-seasons-v1.css','yawmi-habit-insights-v30.js','yawmi-habit-insights-v30.css','yawmi-friend-challenges-v30.js','yawmi-friend-challenges-v30.css','config.js','mobile-fix.css','yawmi-extras.js','yawmi-extras.css','yawmi-book-discovery-v31.js','yawmi-book-discovery-v31.css','yawmi-money-v32.js','yawmi-money-v32.css','yawmi-diary-v32.js','yawmi-diary-v32.css','yawmi-life-core-v33.js','yawmi-life-growth-v33.js','yawmi-life-privacy-v33.js','yawmi-life-v33.css','yawmi-navigation-v34.js','yawmi-v34.css','yawmi-v15.css','yawmi-quran-typography-v16.css','yawmi-quran.js','yawmi-insights.js','yawmi-rank.js','yawmi-progress-v19.js','yawmi-progress-v19.css','yawmi-install-v22.js','yawmi-onboarding-v22.css','yawmi-features-v23.js','yawmi-features-v23.css','manifest.webmanifest','icon-192.png','icon-512.png'];
+const CACHE='yawmi-v35-public-shell';
+const STATIC=['index.html','auth.html','01_ATLAS_Executive.html','02_JOURNAL_Editorial.html','03_QUEST_RPG.html','cloud.js','yawmi-offline-v1.js','yawmi-seasons-v1.js','yawmi-seasons-v1.css','yawmi-habit-insights-v30.js','yawmi-habit-insights-v30.css','yawmi-friend-challenges-v30.js','yawmi-friend-challenges-v30.css','config.js','mobile-fix.css','yawmi-extras.js','yawmi-extras.css','yawmi-book-discovery-v31.js','yawmi-book-discovery-v31.css','yawmi-google-calendar-v35.js','yawmi-push-v35.js','yawmi-money-v32.js','yawmi-money-v32.css','yawmi-diary-v32.js','yawmi-diary-v32.css','yawmi-life-core-v33.js','yawmi-life-growth-v33.js','yawmi-life-privacy-v33.js','yawmi-life-v33.css','yawmi-navigation-v34.js','yawmi-v34.css','yawmi-v15.css','yawmi-quran-typography-v16.css','yawmi-quran.js','yawmi-insights.js','yawmi-rank.js','yawmi-progress-v19.js','yawmi-progress-v19.css','yawmi-install-v22.js','yawmi-onboarding-v22.css','yawmi-features-v23.js','yawmi-features-v23.css','manifest.webmanifest','icon-192.png','icon-512.png'];
 const PUBLIC_SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js';
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(async cache=>{
  await cache.addAll(STATIC.map(s=>'./'+s));
@@ -28,4 +28,30 @@ self.addEventListener('fetch',e=>{
  }else if(STATIC.includes(basename)){
    e.respondWith(fetch(req).then(r=>{if(r.ok){const copy=r.clone();caches.open(CACHE).then(c=>c.put(req,copy));}return r}).catch(()=>caches.match(req)));
  }
+});
+
+/* Server-originated Web Push: works with no open page; notification contents intentionally generic. */
+self.addEventListener('push',event=>{
+ let msg={};try{msg=event.data?event.data.json():{}}catch(_){}
+ const title=String(msg.title||'تذكير من يومي').slice(0,70);
+ const body=String(msg.body||'افتح التقويم لمراجعة التذكير.').slice(0,150);
+ event.waitUntil(self.registration.showNotification(title,{
+  body,icon:'./icon-192.png',badge:'./icon-192.png',
+  tag:'yawmi-background-reminder',renotify:true,
+  data:{url:'./?source=push&quick=calendar'},
+  actions:[{action:'open',title:'فتح التقويم'}]
+ }));
+});
+self.addEventListener('notificationclick',event=>{
+ event.notification.close();
+ event.waitUntil((async()=>{
+  const dest=new URL('./?source=push&quick=calendar',self.registration.scope).href;
+  const all=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+  for(const client of all){
+   if(new URL(client.url).origin===new URL(dest).origin){
+    try{await client.navigate(dest);await client.focus();return}catch(_){}
+   }
+  }
+  if(self.clients.openWindow)await self.clients.openWindow(dest);
+ })());
 });
