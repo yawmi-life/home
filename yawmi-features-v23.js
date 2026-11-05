@@ -175,25 +175,79 @@ function renderReview(){
  $('ymReviewWeek').innerHTML=weeks.map(w=>'<option value="'+w+'">'+w+' إلى '+addDays(w,6)+'</option>').join('');
  $('ymReviewWeek').value=d;
 }
+/* V34 onboarding: honor exactly the user's selected habits and starter tasks. */
+const onboardingTasks=[
+ {id:'ym-start-learn',title:'أتعلّم حاجة جديدة لمدة 20 دقيقة',category:'learning',repeat:'daily',time:'18:00',difficulty:1,priority:'medium'},
+ {id:'ym-start-move',title:'أتحرك أو أتمرن لمدة 15 دقيقة',category:'health',repeat:'daily',time:'17:00',difficulty:1,priority:'medium'},
+ {id:'ym-start-plan',title:'أراجع أولويات بكرة',category:'discipline',repeat:'daily',time:'20:00',difficulty:1,priority:'medium'}
+];
+const seededTaskIds=new Set(['t1','t2','t3','t4']);
+const defaultHabits=['fajr','reading','water'];
+const defaultTasks=['t1','t2'];
+function starterTasks(s){
+ const fromSeed=(s.tasks||[]).filter(t=>seededTaskIds.has(t.id));
+ return [...fromSeed,...onboardingTasks];
+}
+function onboardSelection(){
+ const modal=$('ymOnboard');
+ if(!modal)return {habits:[],tasks:[]};
+ return {
+  habits:Array.from(modal.querySelectorAll('input[name="ymOnboardHabit"]:checked')).map(x=>x.value),
+  tasks:Array.from(modal.querySelectorAll('input[name="ymOnboardTask"]:checked')).map(x=>x.value)
+ };
+}
+function onboardHint(message='',kind='info'){
+ const node=$('ymOnboardFeedback');if(!node)return;
+ const {habits,tasks}=onboardSelection();
+ node.textContent=message||'اخترت '+habits.length+' عادات و'+tasks.length+' مهام. تقدر تبدأ بأي عدد مناسب في الحدود الموضحة.';
+ node.dataset.kind=kind;
+}
 function showOnboard(){
  if(openedOnboard||!$('ymOnboard')||!S()||!window.YawmiCloud?.ready||S().onboarding?.completed)return;
  if(Number(window.YawmiCloud.revision)>1)return;
  if(Object.keys(S().daily||{}).length>0||(S().history||[]).length||(S().books||[]).length)return;
  openedOnboard=true;
- const h=S().habits||[];
- $('ymOnboardChoices').innerHTML=h.map((x,i)=>'<label><input type="checkbox" value="'+esc(x.id)+'" '+(['fajr','reading','water'].includes(x.id)?'checked':'')+'> '+esc(x.icon||'✦')+' '+esc(x.title)+'</label>').join('');
+ const s=S(),h=s.habits||[],tasks=starterTasks(s);
+ $('ymOnboardChoices').innerHTML=h.map(x=>'<label><input name="ymOnboardHabit" type="checkbox" value="'+esc(x.id)+'" '+(defaultHabits.includes(x.id)?'checked':'')+'> <span>'+esc(x.icon||'✦')+' '+esc(x.title)+'</span></label>').join('');
+ $('ymOnboardTaskChoices').innerHTML=tasks.map(x=>'<label><input name="ymOnboardTask" type="checkbox" value="'+esc(x.id)+'" '+(defaultTasks.includes(x.id)?'checked':'')+'> <span>☑ '+esc(x.title)+'</span></label>').join('');
+ $('ymOnboardGoal').value='';
+ onboardHint();
  $('ymOnboard').showModal();
 }
 function applyOnboard(skip=false){
- const s=S(),checked=Array.from($('ymOnboardChoices').querySelectorAll('input:checked')).map(x=>x.value);
- if(!skip&&(checked.length<1||checked.length>3)){api().notify('اختر من عادة إلى 3 عادات كبداية');return}
- const wanted=skip?['fajr','reading','water']:checked;
- s.habits.forEach(h=>{h.active=wanted.includes(h.id)});
- if(Array.isArray(s.tasks)&&s.tasks.length===4&&s.tasks.every(t=>/^t[1-4]$/.test(t.id)))s.tasks=[];
- const title=skip?'':$('ymOnboardGoal').value.trim().slice(0,100);
+ const s=S(),modal=$('ymOnboard');
+ if(!s||!modal||s.onboarding?.completed)return;
+ if(window.YawmiCloud?.configured&&!window.YawmiCloud.ready)return onboardHint('تأكد من تحميل بيانات حسابك قبل البدء.','error');
+ const selected=onboardSelection(),
+  habitIds=skip?defaultHabits:selected.habits,
+  taskIds=skip?defaultTasks:selected.tasks;
+ const existingHabits=new Set((s.habits||[]).map(x=>x.id));
+ const choices=new Map(starterTasks(s).map(x=>[x.id,x]));
+ const wantedHabits=[...new Set(habitIds)].filter(x=>existingHabits.has(x));
+ const wantedTasks=[...new Set(taskIds)].filter(x=>choices.has(x));
+ if(!wantedHabits.length&&!wantedTasks.length)return onboardHint('اختار عادة واحدة أو مهمة واحدة على الأقل، أو استخدم الإعدادات المقترحة.','error');
+ if(wantedHabits.length>8||wantedTasks.length>6)return onboardHint('اختار بحد أقصى 8 عادات و6 مهام كبداية. تقدر تضيف الباقي بعدين.','error');
+ const oldActives=(s.habits||[]).map(h=>[h.id,h.active]),oldTasks=s.tasks,oldGoals=s.goals,oldOnboard=s.onboarding;
+ const chosen=new Set(wantedHabits);
+ for(const h of s.habits||[])h.active=chosen.has(h.id);
+ const custom=(s.tasks||[]).filter(t=>!seededTaskIds.has(t.id)&&!onboardingTasks.some(p=>p.id===t.id));
+ const list=wantedTasks.map(key=>{
+  const task=choices.get(key);
+  if(seededTaskIds.has(key))return {...task};
+  return {id:api().uid(),title:task.title,category:task.category,repeat:task.repeat||'once',
+   weekDays:[],date:date(),time:task.time||'',difficulty:task.difficulty||1,priority:task.priority||'medium',
+   notes:'',subtasks:[]};
+ });
+ s.tasks=[...custom,...list];
+ const title=skip?'':($('ymOnboardGoal')?.value||'').trim().slice(0,100);
  if(title){if(!Array.isArray(s.goals))s.goals=[];s.goals.push({id:api().uid(),title,kind:'custom',unit:'خطوة',target:10,progress:0,progressEntries:[]})}
- s.onboarding={completed:true,habits:wanted,at:new Date().toISOString()};
- $('ymOnboard').close();api().save();api().render();api().notify('أهلًا بيك في يومي ✦');
+ s.onboarding={completed:true,habits:wantedHabits,tasks:wantedTasks,mode:skip?'suggested':'custom',at:new Date().toISOString()};
+ if(api().save()===false){
+  for(const h of s.habits||[]){const entry=oldActives.find(x=>x[0]===h.id);if(entry)h.active=entry[1]}
+  s.tasks=oldTasks;s.goals=oldGoals;s.onboarding=oldOnboard;
+  return onboardHint('ما قدرناش نحفظ الاختيارات. تأكد من اتصال الحساب وحاول تاني.','error');
+ }
+ modal.close();api().render();api().notify('أهلًا بيك في يومي! اتضافت العادات والمهام اللي اخترتها ✦');
 }
 function offerUndo(label,fn){
  undoFn=fn;
@@ -230,6 +284,7 @@ function wire(){
  if(initDone||!$('ymEnhancementsHome'))return;initDone=true;
  $('ymOnboardContinue')?.addEventListener('click',()=>applyOnboard(false));
  $('ymOnboardSkip')?.addEventListener('click',()=>applyOnboard(true));
+ $('ymOnboard')?.addEventListener('change',e=>{if(e.target.matches('input[name="ymOnboardHabit"],input[name="ymOnboardTask"]'))onboardHint()});
  $('ymUndoAction')?.addEventListener('click',doUndo);
  document.addEventListener('change',e=>{
   if(e.target.id==='ymFocusMinutes'&&!focus.running&&!focus.finished&&focus.remaining===focus.minutes*60){focus.minutes=whole(e.target.value)||25;focus.remaining=focus.minutes*60;saveFocusState();tick()}
@@ -248,7 +303,7 @@ function wire(){
  render();
  if(window.YawmiCloud?.ready)onAccountReady();
 }
-window.YawmiFeatures={render,onAccountReady,weeklyBonus,focusXP,weekStats,offerUndo,onSignedOut(){
+window.YawmiFeatures={render,onAccountReady,weeklyBonus,focusXP,weekStats,offerUndo,showOnboard,applyOnboard,onboardSelection,onSignedOut(){
  const key=focusStoreKey();if(key)try{localStorage.removeItem(key)}catch(_){}
  focus={running:false,endAt:0,remaining:25*60,minutes:25,goal:'',targetType:'general',finished:false,sessionId:''};lastAccountId=null;render();
 }};
