@@ -14,6 +14,14 @@ const arabic=[
   ratings_average:4.777777,ratings_count:9,edition_count:1,first_publish_year:2010,language:['ara']}
 ];
 async function provider(page){
+ await page.route('https://www.googleapis.com/books/v1/volumes?**',route=>{
+  const u=new URL(route.request().url()),q=u.searchParams.get('q')||'';
+  const volume={id:'ARATOMIC123456',volumeInfo:{title:'العادات الذرية',authors:['جيمس كلير'],language:'ar',
+   description:'يتناول الكتاب كيف تساعد التغييرات الصغيرة في تطوير العادات، مع أفكار عملية لمتابعة السلوك.',
+   publishedDate:'2020',pageCount:320,imageLinks:{thumbnail:'https://books.google.com/books/content?id=ARATOMIC123456'}}};
+  const found=/العادات الذرية|Atomic Habits/i.test(q)?[volume]:[];
+  return route.fulfill({status:200,headers:{'access-control-allow-origin':'*','content-type':'application/json'},body:JSON.stringify({totalItems:found.length,items:found})});
+ });
  await page.route('https://openlibrary.org/search.json?**',route=>{
   const url=new URL(route.request().url()),q=url.searchParams.get('q')||'';
   const docs=/[\u0600-\u06ff]/.test(q)||q.includes('language:ara')?arabic:english;
@@ -80,4 +88,29 @@ test('book catalog has no serious WCAG issues in browser fixture',async({page})=
  await provider(page);
  const res=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();
  expect(res.violations.filter(v=>v.impact==='critical'||v.impact==='serious')).toEqual([]);
+});
+
+test('Arabic Atomic Habits search resolves a real Arabic-language edition and verified Arabic publisher synopsis',async({page})=>{
+ await provider(page);
+ await page.getByRole('searchbox',{name:'ابحث عن كتاب أو مؤلف'}).fill('العادات الذرية');
+ await page.getByRole('button',{name:'بحث'}).click();
+ await expect(page.locator('.ym-catalog-card')).toContainText('العادات الذرية');
+ await expect(page.locator('.ym-catalog-card')).not.toContainText('Atomic Habits');
+ await page.locator('#ymCatalogLanguage').selectOption('ar');
+ await expect(page.locator('.ym-catalog-card')).toContainText('جيمس كلير');
+ await page.locator('.ym-catalog-card').getByRole('button',{name:/تفاصيل كتاب/}).click();
+ await expect(page.locator('.ym-catalog-description')).toContainText('التغييرات الصغيرة');
+ await expect(page.locator('#ymCatalogDetail')).toContainText('Google Books');
+ await expect(page.locator('#ymCatalogDetail a')).toHaveAttribute('href',/books.google.com\/books\?id=ARATOMIC123456/);
+ await page.locator('#ymCatalogDetail [data-catalog-save]').click();
+ expect(await page.evaluate(()=>window.__savedBook)).toMatchObject({key:'gb:ARATOMIC123456',source:'Google Books',
+  title:'العادات الذرية',author:'جيمس كلير',pages:320});
+});
+test('Arabic filter refuses English work title merely flagged as having an Arabic edition',async({page})=>{
+ await provider(page);
+ await page.getByRole('searchbox',{name:'ابحث عن كتاب أو مؤلف'}).fill('Atomic Habits');
+ await page.getByRole('button',{name:'بحث'}).click();
+ await page.locator('#ymCatalogLanguage').selectOption('ar');
+ await expect(page.locator('.ym-catalog-card')).toContainText('العادات الذرية');
+ await expect(page.locator('.ym-catalog-card')).not.toContainText('Atomic Habits');
 });
