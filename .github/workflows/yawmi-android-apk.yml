@@ -1,4 +1,4 @@
-name: Build Free YAWMI Android APK
+name: YAWMI Android QA and Safe Signed Update
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: yawmi-android-v1
+  group: yawmi-android-v36
   cancel-in-progress: false
 
 jobs:
@@ -53,43 +53,50 @@ jobs:
           cp icon-512.png android/app/src/main/res/drawable-nodpi/yawmi_icon.png
           file android/app/src/main/res/drawable-nodpi/yawmi_icon.png
 
-      - name: Prepare persistent signing identity or one-time first-release key
+      - name: Build widget debug APK (testing only — not a signed public update)
+        shell: bash
+        run: |
+          gradle -p android --no-daemon :app:assembleDebug
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk | head -12
+
+      - name: Upload widget debug build for QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: YAWMI_ANDROID_V36_WIDGET_DEBUG_NOT_A_PUBLIC_UPDATE
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Restore original signing identity only if GitHub secrets are configured
         shell: bash
         env:
           STORED_KEY_B64: ${{ secrets.YAWMI_ANDROID_KEYSTORE_B64 }}
           STORED_KEY_PASS: ${{ secrets.YAWMI_ANDROID_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
+          echo "SIGNING_READY=false" >> "$GITHUB_ENV"
           KEY_PATH="$RUNNER_TEMP/yawmi-release.jks"
           if [[ -n "$STORED_KEY_B64" && -n "$STORED_KEY_PASS" ]]; then
             printf '%s' "$STORED_KEY_B64" | base64 -d > "$KEY_PATH"
             KEY_PASS="$STORED_KEY_PASS"
             echo "Using existing private signing identity from GitHub Actions secrets"
           else
-            KEY_PASS="$(openssl rand -hex 24)"
-            echo "::add-mask::$KEY_PASS"
-            keytool -genkeypair -noprompt -storetype PKCS12 -keystore "$KEY_PATH" \
-              -alias yawmi -keyalg RSA -keysize 3072 -validity 10000 \
-              -storepass "$KEY_PASS" -keypass "$KEY_PASS" \
-              -dname "CN=YAWMI LifeOS,OU=Android,O=YAWMI,C=SA"
-            mkdir -p "$RUNNER_TEMP/signing-backup"
-            cp "$KEY_PATH" "$RUNNER_TEMP/signing-backup/yawmi-release.jks"
-            printf '%s\n' "$KEY_PASS" > "$RUNNER_TEMP/signing-backup/signing-password.txt"
-            printf 'Protect these two files. To update the installed APK use the same keystore and password.\n' \
-              > "$RUNNER_TEMP/signing-backup/README.txt"
-            tar -C "$RUNNER_TEMP/signing-backup" -czf "$RUNNER_TEMP/signing-backup.tar.gz" .
-            openssl cms -encrypt -binary -aes256 \
-              -in "$RUNNER_TEMP/signing-backup.tar.gz" \
-              -out "$RUNNER_TEMP/signing-backup.cms" -outform DER \
-              android/signing-backup-public-cert.pem
-            echo "A public-key encrypted signing backup was created (NEVER upload the plaintext keystore)"
+            echo "Original signing key not configured. A debug QA APK was built, but public v1.0.0 won't be replaced or given a different signing key." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
+          FINGERPRINT="$(keytool -list -v -keystore "$KEY_PATH" -alias yawmi -storepass "$KEY_PASS" | sed -n 's/.*SHA256: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          if [[ "$FINGERPRINT" != "c9411aebc383ec8200177d6bc2af79560290c4f0a1035b45baadccf1afb6f3d8" ]]; then
+            echo "Refusing update: wrong signing key. Must match original Android v1.0.0 certificate." >&2
+            exit 1
+          fi
+          echo "SIGNING_READY=true" >> "$GITHUB_ENV"
           echo "YAWMI_KEYSTORE_PATH=$KEY_PATH" >> "$GITHUB_ENV"
           echo "YAWMI_KEYSTORE_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
           echo "YAWMI_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
           keytool -list -keystore "$KEY_PATH" -alias yawmi -storepass "$KEY_PASS" >/dev/null
 
       - name: Generate Digital Asset Links deployment file
+        if: env.SIGNING_READY == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -109,6 +116,7 @@ jobs:
           echo "To verify fullscreen TWA, publish the generated assetlinks.json at https://yawmi-life.github.io/.well-known/assetlinks.json" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build signed APK
+        if: env.SIGNING_READY == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -119,43 +127,37 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -12
           sha256sum "$APK" | tee "$RUNNER_TEMP/android-public-files/apk-sha256.txt"
 
-      - name: Preserve Android signing key backup encrypted for the owner
-        uses: actions/upload-artifact@v4
-        if: ${{ hashFiles('android/signing-backup-public-cert.pem') != '' }}
-        with:
-          name: YAWMI_ANDROID_ENCRYPTED_SIGNING_BACKUP_DO_NOT_DELETE
-          path: ${{ runner.temp }}/signing-backup.cms
-          if-no-files-found: ignore
-          retention-days: 90
-
-      - name: Upload APK and assetlinks for manual testing
+      - name: Upload verified original-key APK and assetlinks
+        if: env.SIGNING_READY == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_V1_SIGNED_APK
+          name: YAWMI_ANDROID_V1_1_0_SIGNED_WITH_ORIGINAL_KEY
           path: |
             android/app/build/outputs/apk/release/app-release.apk
             ${{ runner.temp }}/android-public-files/assetlinks.json
             ${{ runner.temp }}/android-public-files/apk-sha256.txt
           retention-days: 90
 
-      - name: Publish free public APK link on GitHub Releases
+      - name: Publish safe update only with the original release key
+        if: env.SIGNING_READY == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="android-v1.0.0"
+          TAG="android-v1.1.0"
           APK="android/app/build/outputs/apk/release/app-release.apk"
+          cp "$APK" "$RUNNER_TEMP/YAWMI-LifeOS-v1.1.0.apk"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release exists: refusing to overwrite an APK using a different signing key"
           else
             gh release create "$TAG" \
-              "$APK#YAWMI-LifeOS-v1.0.0.apk" \
+              "$RUNNER_TEMP/YAWMI-LifeOS-v1.1.0.apk" \
               "$RUNNER_TEMP/android-public-files/assetlinks.json#assetlinks.json" \
               "$RUNNER_TEMP/android-public-files/apk-sha256.txt#apk-sha256.txt" \
               --repo "$GITHUB_REPOSITORY" \
-              --title "يومي LifeOS — Android APK v1.0.0 (مجاني)" \
+              --title "يومي LifeOS — Android APK v1.1.0 (مجاني)" \
               --notes-file android/RELEASE_NOTES.md \
               --latest
           fi
-          echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/YAWMI-LifeOS-v1.0.0.apk" >> "$GITHUB_STEP_SUMMARY"
+          echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/YAWMI-LifeOS-v1.1.0.apk" >> "$GITHUB_STEP_SUMMARY"
