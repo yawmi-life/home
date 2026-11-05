@@ -58,6 +58,7 @@ function matchesSchedule(e:YawmiItem,p:{date:string;time:string;year:number}){
 function candidateEvents(data:any,now:number,tz:string){
  if(!data?.lifeNotificationPrefs?.enabled)return [];
  const result:{key:string;label:string}[]=[];
+ const dismissed=new Set((Array.isArray(data.lifeNotificationDismissed)?data.lifeNotificationDismissed:[]).filter((x:unknown)=>typeof x==="string").slice(-400));
  const records=[
   {items:data.lifeCalendar,kind:"calendar"},
   {items:data.lifeReminders,kind:"reminder"},
@@ -71,7 +72,8 @@ function candidateEvents(data:any,now:number,tz:string){
    for(let lag=0;lag<3;lag++){
     const p=fromParts(now+(lead-lag)*60000,tz);
     if(!matchesSchedule(item,p))continue;
-    result.push({key:bucket.kind+":"+item.id+":"+p.date+":"+item.time+":"+lead,label:"تذكير مستحق"});
+    const key=bucket.kind+":"+item.id+":"+p.date+":"+item.time+":"+lead;
+    if(!dismissed.has(key))result.push({key,label:"تذكير مستحق"});
     break;
    }
   }
@@ -88,9 +90,20 @@ function candidateEvents(data:any,now:number,tz:string){
    break;
   }
  }
+ // Snoozes are user-approved actions persisted with the account, never changes to event time.
+ for(const v of (Array.isArray(data.lifeNotificationSnoozes)?data.lifeNotificationSnoozes:[]).slice(-150)){
+  if(typeof v?.originalKey!=="string"||!v.originalKey.startsWith("calendar:")&&!v.originalKey.startsWith("reminder:"))continue;
+  const tokens=v.originalKey.split(":");
+  if(tokens.length!==6||!tokens[1]||!pattern.test(tokens[2])||!timePattern.test(tokens[3]+":"+tokens[4]))continue;
+  const at=Date.parse(String(v.at||""));
+  if(!Number.isFinite(at)||at>now||now-at>3*60000||dismissed.has(v.originalKey))continue;
+  const type=tokens[0],id=tokens[1],original=(type==="calendar"?data.lifeCalendar:data.lifeReminders);
+  if(!Array.isArray(original)||!original.some((e:YawmiItem)=>e?.id===id&&!e.done))continue;
+  result.push({key:"snooze:"+v.originalKey+":"+at,label:"تذكير مؤجّل"});
+ }
  return distinct(result.map(x=>x.key)).map(key=>({key,label:"افتح يومي لمراجعة موعدك أو تذكيرك"})).slice(0,25);
 }
-async function sendTo(sub:Sub,payload:{title:string;body:string;url:string},keys:Record<string,string>){
+async function sendTo(sub:Sub,payload:{title:string;body:string;url:string;notification_key?:string},keys:Record<string,string>){
  webpush.setVapidDetails(origin+"/home/",keys.public_key,keys.private_key);
  return await webpush.sendNotification({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},JSON.stringify(payload),{TTL:1800,urgency:"normal"});
 }
@@ -139,7 +152,7 @@ async function runDue(keys:Record<string,string>){
     if(claimError.code==="23505")continue;
     failed++;continue;
    }
-   try{await sendTo(row,payload,keys);queued++}
+   try{await sendTo(row,{...payload,notification_key:item.key},keys);queued++}
    catch(err){
     failed++;
     if([404,410].includes(Number((err as any)?.statusCode))){
