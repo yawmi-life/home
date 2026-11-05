@@ -129,3 +129,28 @@ test('Android widget link waits for authenticated cloud snapshot',async({page})=
  await expect.poll(()=>page.evaluate(()=>window.__view)).toBe('calendar');
  expect(new URL(page.url()).searchParams.has('quick')).toBe(false);
 });
+
+test('yearly reminders surface in Today on their next occurrence without modifying original record',async({page})=>{
+ await boot(page);
+ await page.evaluate(()=>{
+  window.__state.lifeCalendar=[];
+  window.__state.lifeReminders=[
+   {id:'annual',title:'ذكرى سنوية مهمة',date:'2020-11-06',time:'10:30',repeat:'yearly',done:false},
+   {id:'past',title:'موعد انتهى',date:'2022-01-01',time:'12:00',repeat:'none',done:false}
+  ];
+  window.YawmiLifeV36.render();
+ });
+ await expect(page.locator('#ymV36Today')).toContainText('ذكرى سنوية مهمة');
+ await expect(page.locator('#ymV36Today')).toContainText('2026-11-06');
+ expect(await page.evaluate(()=>window.__state.lifeReminders[0].date)).toBe('2020-11-06');
+});
+test('offline status never incorrectly claims current cloud synchronization',async({page,context})=>{
+ await boot(page);
+ await context.setOffline(true);
+ await page.evaluate(()=>window.YawmiLifeV36.render());
+ await expect(page.locator('#ymV36Today')).toContainText('لا يوجد اتصال بالإنترنت');
+ await expect(page.locator('#ymV36Today')).not.toContainText('تمت مزامنة البيانات');
+ await context.setOffline(false);
+ await page.evaluate(()=>{window.YawmiCloud.pending={};window.YawmiLifeV36.render()});
+ await expect(page.locator('#ymV36Today')).toContainText('قيد المزامنة');
+});
