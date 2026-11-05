@@ -86,13 +86,14 @@ function itemsOn(d){
   done:(s.finance?.transactions||[]).some(t=>t.recurringId===r.id&&monthOf(t.date)===monthOf(d))});
  }
  for(const r of s.lifeReminders){if(localDayEvent(r,d)&&!r.hidden)out.push({id:r.id,type:'reminder',date:d,time:r.time||'',title:r.title,source:'reminder',done:!!r.done&&r.repeat!=='yearly'})}
+ for(const x of window.YawmiGoogleCalendar?.eventsOn?.(d)||[])out.push(x);
  return out.sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99'))||a.type.localeCompare(b.type));
 }
 const typeStyle={event:['📅','موعد'],appointment:['📍','مقابلة'],timeblock:['⏳','حجز وقت'],task:['☑','مهمة'],habit:['◉','عادات'],bill:['🧾','التزام'],reminder:['🔔','تذكير']};
 function itemMarkup(x){
  const k=typeStyle[x.type]||typeStyle.event;
  return '<div class="yl-agenda-item"><span class="yl-agenda-icon">'+k[0]+'</span><div class="yl-agenda-info"><b>'+esc(x.title)+'</b><small>'+esc(k[1])+(x.time?' · '+esc(x.time)+(x.end?' – '+esc(x.end):''):'')+(x.done?' · ✓ مكتمل':'')+'</small>'+(x.note?'<p>'+esc(x.note)+'</p>':'')+'</div>'+
- (x.source==='event'?btn('تعديل','data-life-event-edit="'+esc(x.id)+'"'):x.source==='reminder'?btn('عرض','data-life-open-reminder="'+esc(x.id)+'"'):'')+'</div>';
+ (x.source==='event'?btn('تعديل','data-life-event-edit="'+esc(x.id)+'"')+btn('Google ↗','data-google-export-event="'+esc(x.id)+'"'):x.source==='reminder'?btn('تعديل','data-life-open-reminder="'+esc(x.id)+'"'):x.source==='google'&&x.url?'<a class="yl-action" target="_blank" rel="noopener noreferrer" href="'+esc(x.url)+'">Google ↗</a>':'')+'</div>';
 }
 function calendar(){
  const rootEl=root('calendar');if(!rootEl)return;const s=state();if(!s)return;
@@ -119,7 +120,14 @@ function calendar(){
  '<div class="yl-segment">'+['month','week','day'].map((v,i)=>'<button type="button" data-life-cal-view="'+v+'" class="'+(calView===v?'active':'')+'">'+['شهر','أسبوع','يوم'][i]+'</button>').join('')+'</div></div>'+
  viewHtml+'</div><div class="yl-surface"><div class="yl-toolbar"><div><h3>جدول '+esc(shortDay(calDay))+'</h3><small>من المهام والعادات الموجودة، والمواعيد الجديدة</small></div>'+btn('＋ موعد','data-life-event-new','primary')+'</div>'+
  (agenda.length?'<div class="yl-agenda-list">'+agenda.map(itemMarkup).join('')+'</div>':empty('اليوم ده هادي','أضف موعدًا، أو ارجع للمهام لتوزيع أعمالك.'))+'</div>'+
- '<p class="yl-disclaimer">العادات والمهام معروضة من بياناتك الأصلية. التقويم لا يمنح XP ولا يُكمل مهمة تلقائيًا.</p>';
+ '<section class="yl-surface"><div class="yl-toolbar"><div><h3>🔔 التذكيرات والمناسبات</h3><small>كله هنا داخل التقويم، ومش محتاج قسم تاني.</small></div>'+btn('＋ إضافة تذكير','data-life-rem-new','primary')+'</div>'+
+ (s.lifeReminders.length?'<div class="yl-agenda-list">'+s.lifeReminders.slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(0,10).map(r=>itemMarkup({id:r.id,type:'reminder',time:r.time||'',title:r.title,date:r.date,source:'reminder'})).join('')+'</div>':
+ '<p class="muted">ضيف تذكير من هنا، وهيظهر في يومه على التقويم.</p>')+
+ '</section>'+
+ '<div class="yl-twocol"><section class="yl-surface" id="ymGoogleCalendarControls"><h3>Google Calendar</h3><p>جاري التحقق من إعدادات الربط…</p></section>'+
+ '<section class="yl-surface" id="ymPushControls"><h3>إشعارات الهاتف</h3><p>جاري التحقق من إعدادات الإشعارات…</p></section></div>'+
+ '<p class="yl-disclaimer">التقويم يعرض البيانات الأصلية للمهام والعادات والتذكيرات دون احتساب XP. جوجل والـPush يحتاجان موافقتك الصريحة.</p>';
+ window.YawmiGoogleCalendar?.renderControls?.();window.YawmiPush?.renderControls?.()
 }
 function shiftCalendar(n){if(calView==='day')calDay=add(calDay,n);else if(calView==='week')calDay=add(calDay,7*n);
  else{const d=toDate(calDay);d.setDate(1);d.setMonth(d.getMonth()+n);calDay=ymd(d)}calendar()}
@@ -313,7 +321,7 @@ function handleClick(e){
  if(b.hasAttribute('data-life-rem-new'))return reminderForm(null);
  if(b.dataset.lifeOpenReminder)return reminderForm(b.dataset.lifeOpenReminder);
  if(b.dataset.lifeRemDelete)return deleteItem('lifeReminders',b.dataset.lifeRemDelete,'التذكير');
- if(b.hasAttribute('data-life-ask-notify'))return enableNotifications();
+ if(b.hasAttribute('data-life-ask-notify'))return window.YawmiPush?.enable?.()||enableNotifications();
  if(b.hasAttribute('data-life-note-new'))return noteForm(null);
  if(b.dataset.lifeNoteEdit)return noteForm(b.dataset.lifeNoteEdit);
  if(b.dataset.lifeNoteDelete)return deleteItem('lifeNotes',b.dataset.lifeNoteDelete,'الملاحظة');
@@ -335,7 +343,7 @@ function init(){
  window.setInterval(checkNotifications,30000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkNotifications()});
 }
-function render(tab){if(tab==='calendar')calendar();if(tab==='reminders')reminders();if(tab==='notes')notes();
+function render(tab){if(tab==='calendar')calendar();if(tab==='notes')notes();
  if(['health','routines','planning','coach'].includes(tab))window.YawmiLifeGrowth?.render(tab);
  if(tab==='privacy')window.YawmiLifePrivacy?.render();
 }
