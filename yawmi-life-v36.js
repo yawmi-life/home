@@ -92,7 +92,7 @@ function dashboard(){
  const d=day(),f=getFacts(s,d),n=f.light?1:3,h=f.habits.filter(h=>!habitDone(s,h,d)).slice(0,n);
  const button=(name,data)=>'<button type="button" '+data+'>'+name+'</button>';
  const taskHtml=f.pending.length?f.pending.slice(0,n).map(t=>'<div class="ym36-item"><span>☐</span><b>'+esc(t.title)+'</b>'+button('عرض المهمة','data-v36-gotasks')+'</div>').join(''):'<p class="ym36-muted">مفيش مهام متبقية من جدول اليوم.</p>';
- const habitHtml=h.length?h.map(x=>'<div class="ym36-item"><span>'+esc(x.icon||'✦')+'</span><b>'+esc(x.title)+'</b>'+button('متابعة','data-v36-gohabits')+'</div>').join(''):'<p class="ym36-muted">مفيش عادات متبقية من جدول اليوم.</p>';
+ const habitHtml=h.length?h.map(x=>'<div class="ym36-item"><span>'+esc(x.icon||'✦')+'</span><b>'+esc(x.title)+(x.afterHabitId&&s.habits?.some(z=>z.id===x.afterHabitId)?'<small class="ym36-hint"> · بعد '+esc(s.habits.find(z=>z.id===x.afterHabitId).title)+'</small>':'')+'</b>'+button('متابعة','data-v36-gohabits')+'</div>').join(''):'<p class="ym36-muted">مفيش عادات متبقية من جدول اليوم.</p>';
  box.innerHTML='<section class="ym36-panel"><div class="ym36-title"><div><small>MY DAY · أهم حاجة النهارده</small><h2>يومك ببساطة</h2><p>ملخص حقيقي من مهامك وعاداتك المسجلة، من غير نقاط إضافية.</p></div>'+
  '<div class="ym36-controls">'+button('＋ أضف بسرعة','data-v36-openquick')+button(f.light?'↩ ارجع ليومي العادي':'☀️ يوم خفيف','data-v36-light')+'</div></div>'+
  '<div class="ym36-metrics"><span>المهام <strong>'+f.doneTasks+'/'+f.tasks.length+'</strong></span><span>العادات <strong>'+f.doneHabits+'/'+f.habits.length+'</strong></span>'+
@@ -110,7 +110,7 @@ function quickDialog(){
  d.innerHTML='<form id="ymV36Form"><div class="ym36-dialog-head"><h2>＋ إضافة سريعة</h2><button type="button" data-v36-close aria-label="إغلاق">✕</button></div>'+
  '<label>اكتب أو املي اللي في بالك<textarea id="ymV36Text" rows="2" maxlength="150" placeholder="مثال: فكرني أراجع بكرة الساعة 8 مساء"></textarea></label>'+
  '<div class="ym36-controls"><button type="button" data-v36-parse>فهم العبارة</button><button type="button" data-v36-voice>🎙️ إملاء صوتي</button></div>'+
- '<p class="ym36-muted">راجع التفاصيل قبل الإضافة. مفيش إنجاز أو XP بيتسجل تلقائيًا.</p>'+
+ '<p class="ym36-muted">راجع التفاصيل قبل الإضافة. مفيش إنجاز أو XP بيتسجل تلقائيًا. الإملاء الصوتي قد تستخدم فيه خدمة التعرّف على الصوت التابعة للمتصفح.</p>'+
  '<label>النوع<select id="ymV36Kind"><option value="task">مهمة</option><option value="reminder">تذكير</option><option value="note">ملاحظة</option></select></label>'+
  '<label>العنوان<input id="ymV36Title" maxlength="110" required></label>'+
  '<div class="ym36-fields"><label>التاريخ<input id="ymV36Date" type="date" required></label><label>الساعة (اختياري للمهام)<input id="ymV36Time" type="time"></label></div>'+
@@ -161,7 +161,7 @@ function habitPanel(){
  '<label>اليوم<input id="ymV36HabitDate" type="date" value="'+date+'"></label>'+
  '<label>أعملها بعد<select id="ymV36HabitAfter"><option value="">بدون ربط</option>'+choices.filter(z=>z.id!==h.id).map(z=>'<option value="'+esc(z.id)+'" '+(after===z.id?'selected':'')+'>'+esc(z.title)+'</option>').join('')+'</select></label></div>'+
  '<div class="ym36-controls"><button type="button" data-v36-rest>'+ (rest?'↩ إلغاء يوم الراحة':'☀️ اعتبره يوم راحة')+'</button><button type="button" data-v36-after>حفظ ربط العادتين</button></div>'+
- '<p class="ym36-muted">'+(rest?'العادة مش مطلوبة في اليوم ده، ولا يمنح راحة اليوم نقاطًا.':'أيام الراحة لا تمنح XP، ولا يمكن تسجيل راحة على يوم تم فيه نشاط لهذه العادة.')+'</p>';
+ '<p class="ym36-muted">'+(rest?'العادة مش مطلوبة في اليوم ده، ولا يمنح راحة اليوم نقاطًا.':'أيام الراحة لا تمنح XP، ولا يمكن تسجيل راحة على يوم تم فيه نشاط لهذه العادة.')+' ربط العادة للتذكير بالترتيب فقط، ولا يكملها تلقائيًا.</p>';
 }
 function toggleHabitRest(){
  if(!canWrite())return notify('انتظر مزامنة حسابك قبل تعديل العادات.');
@@ -241,6 +241,16 @@ async function importBackup(file){
  if(payload?.app!=='YAWMI LifeOS'||payload.format!==36||!v||v.version!==7||!Array.isArray(v.tasks)||!Array.isArray(v.habits)||!Array.isArray(v.books)||!Array.isArray(v.rewards)||!v.daily||typeof v.daily!=='object'||Array.isArray(v.daily))
   return $('ymV36BackupError').textContent='صيغة النسخة الاحتياطية غير متوافقة مع حساب يومي.';
  if((u||from)&&u!==from)return $('ymV36BackupError').textContent='هذه نسخة حساب مختلف؛ منعنا استيرادها لحماية خصوصية المستخدمين.';
+ function unsafe(x,depth=0){
+  if(depth>25)return true;
+  if(x&&typeof x==='object'){
+   for(const key of Object.keys(x)){
+    if(['__proto__','constructor','prototype'].includes(key)||unsafe(x[key],depth+1))return true;
+   }
+  }
+  return false;
+ }
+ if(unsafe(v))return $('ymV36BackupError').textContent='النسخة الاحتياطية تحتوي مفاتيح غير مسموحة؛ لن يتم استيرادها.';
  if(cloud()?.pending||cloud()?.conflict)return $('ymV36BackupError').textContent='احسم التعديلات المعلقة أو تعارض المزامنة قبل الاستعادة.';
  if(!confirm('تحذير: استعادة النسخة تستبدل البيانات الموجودة في حسابك بهذا الملف، وقد تعيد سجل مهام أقدم. هل أنت متأكد؟'))return;
  const before=structuredClone(current),next=structuredClone(v);
