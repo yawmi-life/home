@@ -33,10 +33,10 @@ function makeSnapshot(){
  return Object.fromEntries(Object.entries(obj).map(([k,v])=>[k,k==='day'?v:Math.min(100000000,Math.max(0,Number(v)||0))]));
 }
 function say(message,bad=false){const area=$('yawmiNativeWidgetStatus');if(area){area.textContent=message;area.dataset.error=bad?'true':'false';}}
-const widgetIntent=(host,token='',pkg='com.yawmilife.app.widgets')=>'intent://'+host+(token?'?token='+encodeURIComponent(token):'')+'#Intent;scheme=yawmiwidget;package='+pkg+';end';
+const widgetIntent=(host,token='')=>'intent://'+host+(token?'?token='+encodeURIComponent(token):'')+'#Intent;scheme=yawmiwidget;package=com.yawmilife.app;end';
 function setPendingLink(token,user){
  pendingToken=token;pendingUser=user;
- const b=$('yawmiNativeWidgetFinish');if(b){b.hidden=!token;b.textContent='📱 تفعيل ويدجتس يومي على هذا الهاتف';}const alt=$('yawmiNativeWidgetFinishMain');if(alt)alt.hidden=!token;
+ const b=$('yawmiNativeWidgetFinish');if(b){b.hidden=!token;b.textContent='📱 ربط ويدجتس تطبيق يومي الأصلي';}
 }
 async function digest(value){
  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));
@@ -57,16 +57,16 @@ async function pair(){
   if(error)throw Error(error.message||'SERVER_ERROR');
   setPendingLink(token,uid);
   lastUid=uid;lastValue=JSON.stringify(snapshot);lastPush=Date.now();
-  say('تم تجهيز الربط. اضغط «إكمال التفعيل» لفتح تطبيق يومي وربط الويدجتس.');
+  say('الربط جاهز. اضغط «ربط ويدجتس تطبيق يومي الأصلي»؛ يلزم تثبيت تحديث يومي الموقّع بنفس شهادة التطبيق الحالي.');
  }catch(err){say('تعذّر ربط الويدجت: '+String(err.message||err),true)}
  finally{if(b)b.disabled=false}
 }
-function finishPair(pkg='com.yawmilife.app.widgets'){
+function finishPair(){
  if(!pendingToken||!authorized()||cloud().currentUser.id!==pendingUser){
   setPendingLink('','');say('انتهت جلسة التفعيل. ابدأ الربط مرة أخرى.',true);return;
  }
  // Must be a direct, user-initiated click; no auth JWT or personal data in the URI.
- window.location.href=widgetIntent('link',pendingToken,pkg);
+ window.location.href=widgetIntent('link',pendingToken);
  setPendingLink('','');
  say('تم إرسال أمر الربط لأندرويد. أضف ويدجت «يومي» من الشاشة الرئيسية.');
 }
@@ -105,11 +105,11 @@ function mount(){
  const home=$('page-home');if(!home||ui)return;
  ui=document.createElement('section');ui.id='yawmiNativeWidgetsPanel';
  ui.innerHTML='<div class="yn-head"><span class="yn-emoji">▦</span><div><h2>ويدجتس شاشة الهاتف</h2><p>تابع مهامك وعاداتك وXP والمياه خارج التطبيق، من شاشة Android الرئيسية.</p></div></div>'+
- '<div class="yn-actions"><a class="yn-download" href="https://github.com/yawmi-life/home/releases/download/android-widgets-v1.2.0-beta/YAWMI-Widgets-v1.2.0-companion.apk" rel="noopener noreferrer">⬇ تنزيل تطبيق الويدجتس</a><button type="button" id="yawmiNativeWidgetPair">ربط ويدجتس الهاتف</button>'+
- '<button type="button" id="yawmiNativeWidgetFinish" hidden>📱 تفعيل ويدجتس يومي</button>'+ '<button type="button" id="yawmiNativeWidgetFinishMain" hidden>الربط بالتطبيق الأصلي بعد تحديثه</button>'+
+ '<div class="yn-actions"><button type="button" id="yawmiNativeWidgetPair">ربط ويدجتس الهاتف</button>'+
+ '<button type="button" id="yawmiNativeWidgetFinish" hidden>📱 ربط ويدجتس يومي الأصلي</button>'+
  '<button type="button" id="yawmiNativeWidgetUnlink">فصل جميع الأجهزة</button>'+
  '<button type="button" id="yawmiNativeWidgetClear" hidden>مسح القيم من هذا الهاتف</button></div>'+
- '<p id="yawmiNativeWidgetStatus" role="status">تُعرض الملخصات فقط، دون أسماء المهام أو البيانات الخاصة. ثبّت «يومي ويدجتس» أولًا من الرابط أعلاه.</p>'+
+ '<p id="yawmiNativeWidgetStatus" role="status">الويدجتس جزء من تطبيق يومي الرئيسي، ولا تحتاج إلى تنزيل تطبيق منفصل. ظهورها يتطلب نسخة APK المحدثة والموقّعة بمفتاح الإصدار الأصلي.</p>'+
  '<small>بعد التفعيل، اضغط مطوّلًا على شاشة الهاتف الرئيسية ← الويدجتس ← يومي LifeOS. التحديث الدوري حسب قيود أندرويد.</small>';
  const anchor=home.querySelector('.date-row');
  if(anchor)home.insertBefore(ui,anchor);else home.appendChild(ui);
@@ -130,10 +130,9 @@ function mount(){
  document.head.appendChild(css);
  $('yawmiNativeWidgetPair').addEventListener('click',pair);
  $('yawmiNativeWidgetFinish').addEventListener('click',()=>finishPair());
- $('yawmiNativeWidgetFinishMain').addEventListener('click',()=>finishPair('com.yawmilife.app'));
  $('yawmiNativeWidgetUnlink').addEventListener('click',disconnect);
  $('yawmiNativeWidgetClear').addEventListener('click',()=>{window.location.href=widgetIntent('unlink')});
- if(!isAndroid())say('الربط يتم من هاتف Android المثبّت عليه يومي. سيظهر خيار التفعيل هناك.');
+ if(!isAndroid())say('لربط الويدجتس افتح يومي من هاتف Android بعد تثبيت تحديث التطبيق الرئيسي.');
 }
 function boot(){mount();setInterval(()=>{if(document.visibilityState==='visible')publish()},15000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')publish()});setTimeout(publish,3000);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
