@@ -101,7 +101,7 @@ jobs:
           test -s "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/yawmi-release-manifest.txt
           grep -F "package: name='com.yawmilife.app'" /tmp/yawmi-release-manifest.txt
-          grep -F "versionCode='3'" /tmp/yawmi-release-manifest.txt
+          grep -F "versionCode='4'" /tmp/yawmi-release-manifest.txt
           if grep -F 'application-debuggable' /tmp/yawmi-release-manifest.txt; then
             echo "Refusing to distribute a debuggable release" >&2
             exit 1
