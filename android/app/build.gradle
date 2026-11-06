@@ -2,16 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
-// A side-by-side companion is safe when the original APK signing key is not available.
-def isWidgetCompanion = project.findProperty('yawmiWidgetCompanion') == 'true'
-
 android {
     namespace 'com.yawmilife.app'
     compileSdk 36
 
     defaultConfig {
-        applicationId isWidgetCompanion ? 'com.yawmilife.app.widgets' : 'com.yawmilife.app'
-        manifestPlaceholders = [yawmiAppLabel: isWidgetCompanion ? 'يومي ويدجتس' : '@string/app_name']
+        applicationId 'com.yawmilife.app'
         minSdk 24
         targetSdk 35
         versionCode 3
@@ -29,9 +25,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            if (isWidgetCompanion) debuggable false
-        }
         release {
             minifyEnabled false
             shrinkResources false
