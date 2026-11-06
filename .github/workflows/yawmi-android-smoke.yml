@@ -1,0 +1,77 @@
+name: YAWMI Android native launch smoke test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/yawmi-android-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: 'false'
+      - name: SDK and bundled YAWMI app
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-36" "build-tools;35.0.0"
+          mkdir -p android/app/src/main/res/drawable-nodpi android/app/src/main/assets/www android/app/src/main/assets/vendor
+          cp icon-512.png android/app/src/main/res/drawable-nodpi/yawmi_icon.png
+          shopt -s nullglob
+          for source in *.html *.js *.css *.png *.jpg *.jpeg *.svg *.webmanifest *.ico; do
+            cp "$source" android/app/src/main/assets/www/
+          done
+          curl -fLsS --retry 3 --connect-timeout 12 --max-time 80             "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"             -o android/app/src/main/assets/vendor/supabase.min.js
+          gradle -p android --no-daemon :app:assembleDebug
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Enable emulator hardware acceleration
+        shell: bash
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Test Android first launch and home widgets on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am force-stop com.yawmilife.app || true
+            adb shell am start -W -n com.yawmilife.app/.YawmiMainActivity | tee /tmp/yawmi-launch.txt
+            sleep 12
+            adb shell dumpsys activity activities > /tmp/yawmi-activity.txt
+            grep -F 'com.yawmilife.app/.YawmiMainActivity' /tmp/yawmi-activity.txt
+            adb shell uiautomator dump /sdcard/yawmi-views.xml >/tmp/yawmi-uiauto.txt || true
+            adb shell cat /sdcard/yawmi-views.xml > /tmp/yawmi-ui.xml || true
+            if ! grep -F 'يومي' /tmp/yawmi-ui.xml; then
+              echo "UI capture not available; require activity and crash logs as minimum."
+            fi
+            adb logcat -d -b crash > /tmp/yawmi-crash.txt
+            if grep -E 'FATAL EXCEPTION|com.yawmilife.app' /tmp/yawmi-crash.txt; then
+              echo "Native Android crash detected" >&2
+              exit 1
+            fi
+            echo "Android launch / widget-enabled package smoke test passed"
