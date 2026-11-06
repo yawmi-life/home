@@ -54,6 +54,30 @@ jobs:
           cp icon-512.png android/app/src/main/res/drawable-nodpi/yawmi_icon.png
           file android/app/src/main/res/drawable-nodpi/yawmi_icon.png
 
+      - name: Bundle all YAWMI public app screens, JS, CSS and icons into APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mkdir -p android/app/src/main/assets/www
+          for file in *.html *.js *.css *.png *.jpg *.jpeg *.svg *.webmanifest *.ico; do
+            cp "$file" android/app/src/main/assets/www/
+          done
+          for required in index.html 01_ATLAS_Executive.html 02_JOURNAL_Editorial.html 03_QUEST_RPG.html cloud.js config.js yawmi-native-widgets-v1.js sw.js; do
+            test -s "android/app/src/main/assets/www/$required"
+          done
+          echo "Bundled static assets:"
+          find android/app/src/main/assets/www -type f | wc -l
+
+      - name: Bundle pinned public Supabase SDK for a reliable offline shell
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p android/app/src/main/assets/vendor
+          curl -fLsS --retry 3 --connect-timeout 12 --max-time 80             "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"             -o android/app/src/main/assets/vendor/supabase.min.js
+          test "$(wc -c < android/app/src/main/assets/vendor/supabase.min.js)" -gt 100000
+          sha256sum android/app/src/main/assets/vendor/supabase.min.js
+
       - name: Build widget debug APK (testing only — not a signed public update)
         shell: bash
         run: |
@@ -64,7 +88,7 @@ jobs:
       - name: Upload widget debug build for QA
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_V1_2_0_WIDGET_DEBUG_NOT_A_PUBLIC_UPDATE
+          name: YAWMI_ANDROID_V1_3_0_WIDGET_DEBUG_NOT_A_PUBLIC_UPDATE
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
@@ -86,7 +110,7 @@ jobs:
       - name: Upload original-app unsigned release package
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_V1_2_0_UNSIGNED_RELEASE_FOR_ORIGINAL_KEY_ONLY
+          name: YAWMI_ANDROID_V1_3_0_UNSIGNED_RELEASE_FOR_ORIGINAL_KEY_ONLY
           path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 7
 
@@ -187,7 +211,7 @@ jobs:
         if: env.SIGNING_READY == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_V1_2_0_SIGNED_WITH_ORIGINAL_KEY
+          name: YAWMI_ANDROID_V1_3_0_SIGNED_WITH_ORIGINAL_KEY
           path: |
             android/app/build/outputs/apk/release/app-release.apk
             ${{ runner.temp }}/android-public-files/assetlinks.json
@@ -201,19 +225,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="android-v1.2.0"
+          TAG="android-v1.3.0"
           APK="android/app/build/outputs/apk/release/app-release.apk"
-          cp "$APK" "$RUNNER_TEMP/YAWMI-LifeOS-v1.2.0.apk"
+          cp "$APK" "$RUNNER_TEMP/YAWMI-LifeOS-v1.3.0.apk"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release exists: refusing to overwrite an APK using a different signing key"
           else
             gh release create "$TAG" \
-              "$RUNNER_TEMP/YAWMI-LifeOS-v1.2.0.apk" \
+              "$RUNNER_TEMP/YAWMI-LifeOS-v1.3.0.apk" \
               "$RUNNER_TEMP/android-public-files/assetlinks.json#assetlinks.json" \
               "$RUNNER_TEMP/android-public-files/apk-sha256.txt#apk-sha256.txt" \
               --repo "$GITHUB_REPOSITORY" \
-              --title "يومي LifeOS — Android APK v1.2.0 (مجاني)" \
+              --title "يومي LifeOS — Android APK v1.3.0 (مجاني)" \
               --notes-file android/RELEASE_NOTES.md \
               --latest
           fi
-          echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/YAWMI-LifeOS-v1.2.0.apk" >> "$GITHUB_STEP_SUMMARY"
+          echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/YAWMI-LifeOS-v1.3.0.apk" >> "$GITHUB_STEP_SUMMARY"
