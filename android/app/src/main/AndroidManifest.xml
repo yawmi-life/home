@@ -55,5 +55,65 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/yawmi_widget_info" />
         </receiver>
+        <receiver
+            android:name="com.yawmilife.app.YawmiCategoryWidget$Today"
+            android:exported="true"
+            android:label="@string/yawmi_widget_today">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
+        <receiver
+            android:name="com.yawmilife.app.YawmiCategoryWidget$Productivity"
+            android:exported="true"
+            android:label="@string/yawmi_widget_productivity">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
+        <receiver
+            android:name="com.yawmilife.app.YawmiCategoryWidget$Planning"
+            android:exported="true"
+            android:label="@string/yawmi_widget_planning">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
+        <receiver
+            android:name="com.yawmilife.app.YawmiCategoryWidget$Learning"
+            android:exported="true"
+            android:label="@string/yawmi_widget_learning">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
+        <receiver
+            android:name="com.yawmilife.app.YawmiCategoryWidget$Wellbeing"
+            android:exported="true"
+            android:label="@string/yawmi_widget_wellbeing">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
+        <receiver
+            android:name="com.yawmilife.app.YawmiCategoryWidget$Life"
+            android:exported="true"
+            android:label="@string/yawmi_widget_life">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
     </application>
 </manifest>
