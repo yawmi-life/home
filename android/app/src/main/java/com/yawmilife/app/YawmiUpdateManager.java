@@ -37,16 +37,16 @@ import java.util.concurrent.Executors;
  * a real user opt-in. Android always retains its system install confirmation.
  */
 final class YawmiUpdateManager {
-    private static final String API =
+    static final String API =
         "https://api.github.com/repos/yawmi-life/home/releases/latest";
-    private static final String REPO = "yawmi-life/home";
+    static final String REPO = "yawmi-life/home";
     private static final String PREFS = "yawmi_update_state";
     private static final String KEY_LAST_CHECK = "last_check";
     private static final String KEY_DOWNLOAD_ID = "download_id";
     private static final String KEY_DOWNLOAD_NAME = "download_name";
     private static final String KEY_SHA = "download_sha";
     private static final long AUTO_INTERVAL = 30L * 60 * 1000;
-    private static final long MAX_APK_SIZE = 60L * 1024 * 1024;
+    static final long MAX_APK_SIZE = 60L * 1024 * 1024;
     private final Activity activity;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private DownloadManager downloads;
@@ -149,7 +149,7 @@ final class YawmiUpdateManager {
         });
     }
 
-    private static boolean trustedDownload(String url, String tag) {
+    static boolean trustedDownload(String url, String tag) {
         try {
             Uri u = Uri.parse(url);
             return "https".equalsIgnoreCase(u.getScheme()) &&
@@ -158,12 +158,12 @@ final class YawmiUpdateManager {
         } catch (Exception ignored) { return false; }
     }
 
-    private static int[] parseVersion(String tag) {
+    static int[] parseVersion(String tag) {
         if (!tag.matches("^android-v[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$")) return null;
         String[] parts = tag.substring("android-v".length()).split("\\.");
         return new int[]{Integer.parseInt(parts[0]),Integer.parseInt(parts[1]),Integer.parseInt(parts[2])};
     }
-    private static int compare(int[] left, int[] right) {
+    static int compare(int[] left, int[] right) {
         for (int i=0;i<3;i++) if (left[i]!=right[i]) return Integer.compare(left[i],right[i]);
         return 0;
     }
@@ -194,10 +194,10 @@ final class YawmiUpdateManager {
             return out.toString("UTF-8");
         } finally { c.disconnect(); }
     }
-    private static JSONObject requestJson(String url) throws Exception {
+    static JSONObject requestJson(String url) throws Exception {
         return new JSONObject(readLimited(url,512*1024));
     }
-    private static String checksum(String url) throws Exception {
+    static String checksum(String url) throws Exception {
         String document=readLimited(url,2048).trim();
         java.util.regex.Matcher match =
             java.util.regex.Pattern.compile("(?i)(?:^|\\s)([a-f0-9]{64})(?:\\s|$)").matcher(document);
@@ -259,7 +259,7 @@ final class YawmiUpdateManager {
                 if (!apk.isFile() || apk.length()<100000 || apk.length()>MAX_APK_SIZE)
                     throw new IllegalStateException("Invalid APK file size");
                 if (!sha.equals(fileSha256(apk))) throw new SecurityException("APK checksum mismatch");
-                if (!originalSignatureAndUpgrade(apk))
+                if (!originalSignatureAndUpgrade(activity,apk))
                     throw new SecurityException("APK package or signer mismatch");
                 state().edit().remove(KEY_DOWNLOAD_ID).putString("staged_apk_name",filename).apply();
                 // On eligible Android 12+ self-updates this can be applied by
@@ -282,7 +282,7 @@ final class YawmiUpdateManager {
         });
     }
 
-    private static String fileSha256(File file) throws Exception {
+    static String fileSha256(File file) throws Exception {
         MessageDigest sha=MessageDigest.getInstance("SHA-256");
         try(InputStream in=new FileInputStream(file)) {
             byte[] buf=new byte[16384];int n;
@@ -293,14 +293,14 @@ final class YawmiUpdateManager {
         return out.toString();
     }
     @SuppressWarnings("deprecation")
-    private boolean originalSignatureAndUpgrade(File apk) {
+    static boolean originalSignatureAndUpgrade(Context app, File apk) {
         try {
-            PackageManager pm=activity.getPackageManager();
+            PackageManager pm=app.getPackageManager();
             int flags=Build.VERSION.SDK_INT>=28?
                 PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;
             PackageInfo candidate=pm.getPackageArchiveInfo(apk.getAbsolutePath(),flags);
-            PackageInfo installed=pm.getPackageInfo(activity.getPackageName(),flags);
-            if(candidate==null || !activity.getPackageName().equals(candidate.packageName))return false;
+            PackageInfo installed=pm.getPackageInfo(app.getPackageName(),flags);
+            if(candidate==null || !app.getPackageName().equals(candidate.packageName))return false;
             long theirs=Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode;
             long ours=Build.VERSION.SDK_INT>=28?installed.getLongVersionCode():installed.versionCode;
             if(theirs<=ours)return false;
@@ -366,7 +366,7 @@ final class YawmiUpdateManager {
                 executor.execute(() -> {
                     try {
                         if (apk.isFile() && apk.length() < MAX_APK_SIZE &&
-                            sha.equals(fileSha256(apk)) && originalSignatureAndUpgrade(apk)) {
+                            sha.equals(fileSha256(apk)) && originalSignatureAndUpgrade(activity,apk)) {
                             activity.runOnUiThread(() -> {
                                 if (!activity.isFinishing()) {
                                     verifiedApk = apk;
