@@ -1,7 +1,6 @@
 package com.yawmilife.app;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -46,13 +45,13 @@ final class YawmiUpdateManager {
     private static final String KEY_DOWNLOAD_ID = "download_id";
     private static final String KEY_DOWNLOAD_NAME = "download_name";
     private static final String KEY_SHA = "download_sha";
-    private static final long AUTO_INTERVAL = 12L * 60 * 60 * 1000;
+    private static final long AUTO_INTERVAL = 30L * 60 * 1000;
     private static final long MAX_APK_SIZE = 60L * 1024 * 1024;
     private final Activity activity;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private DownloadManager downloads;
     private File verifiedApk;
-    private boolean checking, verifying, active;
+    private volatile boolean checking, verifying, active;
     private BroadcastReceiver receiver;
 
     YawmiUpdateManager(Activity activity) {
@@ -84,10 +83,14 @@ final class YawmiUpdateManager {
     }
 
     void check(boolean manuallyRequested) {
-        if (checking || active) {
-            if (manuallyRequested) toast("يتم فحص التحديثات أو تنزيلها بالفعل.");
+        if (checking || active || verifiedApk != null) return;
+        if (state().getLong(KEY_DOWNLOAD_ID, -1) >= 0) {
+            resumePendingInstall();
             return;
         }
+        // After Uptodown distribution is enabled, let its installed app
+        // manage APK updates for devices installed through that store.
+        if (isUptodownManaged()) return;
         long now = System.currentTimeMillis();
         long last = state().getLong(KEY_LAST_CHECK, 0L);
         if (!manuallyRequested && now - last < AUTO_INTERVAL && now >= last) return;
@@ -133,16 +136,12 @@ final class YawmiUpdateManager {
                 if (!digest.matches("^[a-f0-9]{64}$"))
                     throw new IllegalStateException("ملف التحديث يفتقد بصمة تحقق موثوقة");
                 final String targetApk = apk, targetSha = digest, version = tag;
+                // No in-app update dialog and no extra control: queue the
+                // signed APK automatically, then let Android decide whether
+                // it can apply a self-update without user intervention.
                 activity.runOnUiThread(() -> {
-                    if (activity.isFinishing() || activity.isDestroyed()) return;
-                    new AlertDialog.Builder(activity)
-                        .setTitle("تحديث يومي متاح")
-                        .setMessage("الإصدار الجديد: " + version.replace("android-v", "") +
-                            "\nسيُحدَّث تطبيق يومي الحالي، وتبقى بياناته وويدجتسه كما هي. " +
-                            "سيطلب أندرويد تأكيد التثبيت.")
-                        .setNegativeButton("لاحقًا", (d,w) -> {})
-                        .setPositiveButton("تنزيل وتحديث", (d,w) -> download(targetApk, targetSha, version))
-                        .show();
+                    if (!activity.isFinishing() && !activity.isDestroyed())
+                        download(targetApk, targetSha, version);
                 });
             } catch (Exception error) {
                 if (manuallyRequested) toast("تعذّر فحص التحديثات. تحقق من الإنترنت أو إصدار GitHub الرسمي.");
@@ -226,7 +225,8 @@ final class YawmiUpdateManager {
             state().edit().putLong(KEY_DOWNLOAD_ID,id).putString(KEY_DOWNLOAD_NAME,filename)
                 .putString(KEY_SHA,sha).apply();
             active=true;
-            toast("بدأ تنزيل تحديث يومي. هيظهر إشعار بعد اكتماله.");
+            // DownloadManager supplies a normal Android progress notification.
+            // No in-app update screen or tap-to-download prompt.
         } catch (Exception error) {
             active=false;
             toast("تعذّر تنزيل التحديث من GitHub. جرّب مرة أخرى.");
@@ -261,11 +261,17 @@ final class YawmiUpdateManager {
                 if (!sha.equals(fileSha256(apk))) throw new SecurityException("APK checksum mismatch");
                 if (!originalSignatureAndUpgrade(apk))
                     throw new SecurityException("APK package or signer mismatch");
+                state().edit().remove(KEY_DOWNLOAD_ID).putString("staged_apk_name",filename).apply();
+                // On eligible Android 12+ self-updates this can be applied by
+                // the OS without manual confirmation. Other devices receive
+                // the official PackageInstaller approval screen.
+                final boolean sessionCommitted = YawmiSelfUpdateSession.commit(activity,apk);
                 activity.runOnUiThread(() -> {
-                    verifiedApk=apk;
                     active=false;
-                    state().edit().remove(KEY_DOWNLOAD_ID).apply();
-                    installWithSystemConfirmation();
+                    if (!sessionCommitted) {
+                        verifiedApk=apk;
+                        installWithSystemConfirmation();
+                    }
                 });
             } catch (Exception failure) {
                 apk.delete();
@@ -332,7 +338,46 @@ final class YawmiUpdateManager {
             toast("تعذّر فتح مُثبّت Android. تأكد من سماح جهازك بتحديثات APK.");
         }
     }
+    private boolean isUptodownManaged() {
+        String installer = null;
+        try {
+            PackageManager pm = activity.getPackageManager();
+            if (Build.VERSION.SDK_INT >= 30) {
+                installer = pm.getInstallSourceInfo(activity.getPackageName())
+                    .getInstallingPackageName();
+            } else {
+                installer = pm.getInstallerPackageName(activity.getPackageName());
+            }
+        } catch (Exception ignored) {}
+        return installer != null && installer.toLowerCase(Locale.ROOT).contains("uptodown");
+    }
+
     void onResume() {
+        // Re-offer the OS install screen after Android blocks background
+        // activity launching. The file is re-verified before fallback.
+        if (state().getBoolean("os_update_confirmation_pending",false)) {
+            state().edit().remove("os_update_confirmation_pending").apply();
+            String name = state().getString("staged_apk_name","");
+            String sha = state().getString(KEY_SHA,"");
+            File folder = activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            if (folder != null && name.matches("^yawmi-android-v[0-9.]+-update\\.apk$") &&
+                sha.matches("^[a-f0-9]{64}$")) {
+                File apk = new File(folder,name);
+                executor.execute(() -> {
+                    try {
+                        if (apk.isFile() && apk.length() < MAX_APK_SIZE &&
+                            sha.equals(fileSha256(apk)) && originalSignatureAndUpgrade(apk)) {
+                            activity.runOnUiThread(() -> {
+                                if (!activity.isFinishing()) {
+                                    verifiedApk = apk;
+                                    installWithSystemConfirmation();
+                                }
+                            });
+                        }
+                    } catch (Exception ignored) {}
+                });
+            }
+        }
         if(verifiedApk!=null)installWithSystemConfirmation();
         else resumePendingInstall();
         check(false);
