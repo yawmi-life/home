@@ -68,6 +68,28 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
+      - name: Build NON-DEBUG unsigned release package
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle -p android --no-daemon :app:assembleRelease --stacktrace
+          APK='android/app/build/outputs/apk/release/app-release-unsigned.apk'
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/yawmi-release-manifest.txt
+          grep -F "package: name='com.yawmilife.app'" /tmp/yawmi-release-manifest.txt
+          grep -F "versionCode='3'" /tmp/yawmi-release-manifest.txt
+          if grep -F 'application-debuggable' /tmp/yawmi-release-manifest.txt; then
+            echo "Refusing to distribute a debuggable release" >&2
+            exit 1
+          fi
+
+      - name: Upload original-app unsigned release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: YAWMI_ANDROID_V1_2_0_UNSIGNED_RELEASE_FOR_ORIGINAL_KEY_ONLY
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 7
+
       - name: Preserve official Android apksigner tool for independent verification
         uses: actions/upload-artifact@v4
         with:
