@@ -269,3 +269,47 @@ jobs:
               --latest
           fi
           echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/$FILE" >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish public update feed after original-signed GitHub release
+        if: env.SIGNING_READY == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="android-v${YAWMI_CI_NAME}"
+          FILE="YAWMI-LifeOS-v${YAWMI_CI_NAME}.apk"
+          APK='android/app/build/outputs/apk/release/app-release.apk'
+          export TAG FILE
+          export SHA="$(sha256sum "$APK" | cut -d' ' -f1)"
+          export BYTES="$(wc -c < "$APK" | tr -d ' ')"
+          python3 - <<'PY'
+          import json,os,datetime
+          payload={
+            "schema":1,
+            "tag":os.environ["TAG"],
+            "apk_url":"https://github.com/%s/releases/download/%s/%s"%(
+              os.environ["GITHUB_REPOSITORY"],os.environ["TAG"],os.environ["FILE"]),
+            "sha256":os.environ["SHA"],
+            "size":int(os.environ["BYTES"]),
+            "released_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "package":"com.yawmilife.app"
+          }
+          with open("/tmp/yawmi-latest-official-release.json","w") as f:
+            json.dump(payload,f,indent=2,ensure_ascii=False)
+          PY
+          B64="$(base64 -w0 /tmp/yawmi-latest-official-release.json)"
+          CURRENT="$(gh api "repos/$GITHUB_REPOSITORY/contents/android-latest.json" --jq '.sha' 2>/dev/null || true)"
+          if [[ -n "$CURRENT" && "$CURRENT" != "null" ]]; then
+            if gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/android-latest.json"                 -f message="ci: update signed Android release feed to $TAG"                 -f branch=main -f content="$B64" -f sha="$CURRENT" > /dev/null; then
+              echo "Public feed updated: https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/android-latest.json" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning::Feed update failed; GitHub Releases API remains available as fallback"
+            fi
+          else
+            if gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/android-latest.json"                 -f message="ci: create signed Android release feed for $TAG"                 -f branch=main -f content="$B64" > /dev/null; then
+              echo "Public feed created: https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/android-latest.json" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning::Feed creation failed; GitHub Releases API remains available as fallback"
+            fi
+          fi
+
