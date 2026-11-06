@@ -38,6 +38,15 @@ public abstract class YawmiCategoryWidget extends AppWidgetProvider {
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return PendingIntent.getActivity(c,code,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     }
+    private PendingIntent connectFromLauncher(Context c,int code) {
+        // The user deliberately taps the Android home-screen widget.
+        // Pair the account only after YAWMI login is ready in the app.
+        Intent i=new Intent(c,YawmiMainActivity.class);
+        i.setAction(Intent.ACTION_VIEW);
+        i.setData(Uri.parse(ROOT+"home&widgetPair=1"));
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        return PendingIntent.getActivity(c,code,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+    }
     private PendingIntent refresh(Context c,int code) {
         Intent i=new Intent(c,getClass());
         i.setAction(YawmiWidgetData.ACTION_REFRESH);
@@ -52,14 +61,17 @@ public abstract class YawmiCategoryWidget extends AppWidgetProvider {
             v.setTextViewText(R.id.yw_title,heading());
             v.setTextViewText(R.id.yw_subtitle,subtitle());
             v.setTextViewText(R.id.yw_metric_primary,fresh?metric(snapshot):
-                (linked?"البيانات تحتاج تحديثًا":"اربط الويدجت بحسابك"));
+                (linked?"البيانات تحتاج تحديثًا":"اضغط للاتصال بحسابك"));
             v.setTextViewText(R.id.yw_metric_secondary,fresh?detail(snapshot):
-                (linked?"اضغط تحديث أو افتح يومي":"افتح يومي واختر ربط ويدجتس الهاتف"));
+                (linked?"اضغط تحديث أو افتح يومي":"سيُفتح يومي لتسجيل الدخول، دون إعدادات داخله"));
             v.setProgressBar(R.id.yw_progress,100,fresh?Math.min(100,n(snapshot,"progress")):0,false);
             v.setViewVisibility(R.id.yw_progress,fresh?View.VISIBLE:View.GONE);
             v.setTextViewText(R.id.yw_updated,fresh?"● آخر مزامنة اليوم":"○ بانتظار مزامنة حسابك");
-            v.setOnClickPendingIntent(R.id.yw_title,open(c,"home",widgetId*100+20));
-            v.setOnClickPendingIntent(R.id.yw_refresh,refresh(c,widgetId*100+21));
+            PendingIntent connect=connectFromLauncher(c,widgetId*100+19);
+            v.setOnClickPendingIntent(R.id.yw_title,linked?open(c,"home",widgetId*100+20):connect);
+            v.setOnClickPendingIntent(R.id.yw_metric_primary,linked?open(c,"home",widgetId*100+22):connect);
+            v.setOnClickPendingIntent(R.id.yw_metric_secondary,linked?open(c,"home",widgetId*100+23):connect);
+            v.setOnClickPendingIntent(R.id.yw_refresh,linked?refresh(c,widgetId*100+21):connect);
             int[] buttons={R.id.yw_button_1,R.id.yw_button_2,R.id.yw_button_3,R.id.yw_button_4};
             String[] titles=labels(),links=targets();
             for(int i=0;i<4;i++){
