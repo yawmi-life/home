@@ -61,6 +61,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_1_5_0_WIDGET_PICKER_QA
+          name: YAWMI_ANDROID_1_5_1_WIDGET_PICKER_QA
           path: /tmp/yawmi-emulator-artifacts/
           retention-days: 7
