@@ -48,11 +48,9 @@ public final class YawmiWidgetLauncher {
         final int count = registered;
         final String installed = version;
         new AlertDialog.Builder(activity)
-            .setTitle("ويدجتس يومي — الإصدار " + installed)
-            .setMessage("المثبت: " + activity.getPackageName() +
-                "\nويدجتس أندرويد المسجلة: " + count + " من " + PROVIDERS.length +
-                "\n\nاضغط على نوع الويدجت لإضافته للشاشة الرئيسية. " +
-                "ستظهر نافذة تأكيد من واجهة هاتفك.")
+            // Android AlertDialog does not show setItems() when setMessage() is also set.
+            // Keep provider count in title, so the actual seven choices are always visible.
+            .setTitle("ويدجتس يومي — APK " + installed + " (" + count + " من " + PROVIDERS.length + ")")
             .setItems(NAMES, (dialog, which) -> pin(activity, manager, which))
             .setNeutralButton("طريقة الإضافة يدويًا", (d,w) ->
                 new AlertDialog.Builder(activity)
