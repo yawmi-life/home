@@ -39,6 +39,8 @@ import java.util.concurrent.Executors;
 final class YawmiUpdateManager {
     static final String API =
         "https://api.github.com/repos/yawmi-life/home/releases/latest";
+    static final String FEED =
+        "https://raw.githubusercontent.com/yawmi-life/home/main/android-latest.json";
     static final String REPO = "yawmi-life/home";
     private static final String PREFS = "yawmi_update_state";
     private static final String KEY_LAST_CHECK = "last_check";
@@ -97,7 +99,7 @@ final class YawmiUpdateManager {
         checking = true;
         executor.execute(() -> {
             try {
-                JSONObject release = requestJson(API);
+                JSONObject release = officialRelease();
                 if (release.optBoolean("draft") || release.optBoolean("prerelease"))
                     throw new IllegalStateException("غير متاح إصدار مستقر");
                 String tag = release.optString("tag_name", "");
@@ -196,6 +198,38 @@ final class YawmiUpdateManager {
     }
     static JSONObject requestJson(String url) throws Exception {
         return new JSONObject(readLimited(url,512*1024));
+    }
+    /**
+     * CDN-cached public manifest scales update polling to all YAWMI devices
+     * without consuming GitHub API rate limits per device. Only CI may publish
+     * this file after original-certificate verification and signed release.
+     * GitHub Releases/latest is a safe fallback if feed is not configured yet.
+     */
+    static JSONObject officialRelease() throws Exception {
+        try {
+            JSONObject feed = requestJson(FEED);
+            String tag = feed.optString("tag", "");
+            String apk = feed.optString("apk_url", "");
+            String digest = feed.optString("sha256", "").toLowerCase(Locale.ROOT);
+            long bytes = feed.optLong("size", -1);
+            if (parseVersion(tag) != null && trustedDownload(apk,tag) &&
+                digest.matches("^[a-f0-9]{64}$") &&
+                bytes > 100000 && bytes <= MAX_APK_SIZE) {
+                JSONObject asset = new JSONObject();
+                asset.put("name","YAWMI-LifeOS-update.apk");
+                asset.put("browser_download_url",apk);
+                asset.put("size",bytes);
+                asset.put("digest","sha256:"+digest);
+                return new JSONObject()
+                    .put("tag_name",tag)
+                    .put("draft",false)
+                    .put("prerelease",false)
+                    .put("assets",new JSONArray().put(asset));
+            }
+        } catch (Exception ignored) {
+            // Unpublished or unreachable feed. Fall back to the stable API.
+        }
+        return requestJson(API);
     }
     static String checksum(String url) throws Exception {
         String document=readLimited(url,2048).trim();
