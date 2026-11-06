@@ -71,9 +71,6 @@ final class YawmiWidgetData {
         }
     }
 
-    static void fetchAsync(Context context, PendingResultHolder ignored, boolean force) {
-        fetchAsync(context,(android.content.BroadcastReceiver.PendingResult)null,force);
-    }
     static void fetchAsync(Context context, android.content.BroadcastReceiver.PendingResult pending, boolean force) {
         Context app=context.getApplicationContext();
         if(!linked(app)){if(pending!=null)pending.finish();return;}
@@ -128,6 +125,4 @@ final class YawmiWidgetData {
                 preferences(context).edit().putString(SNAPSHOT,clean.toString()).apply();
         }finally{connection.disconnect();}
     }
-    // No instantiable holder; prevents callers from passing untrusted callbacks.
-    interface PendingResultHolder {}
 }
