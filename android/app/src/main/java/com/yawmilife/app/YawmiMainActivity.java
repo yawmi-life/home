@@ -124,11 +124,6 @@ public final class YawmiMainActivity extends Activity {
 
         LinearLayout actions = new LinearLayout(this);
         actions.setGravity(Gravity.CENTER_VERTICAL);
-        Button widgets = button("▦ الويدجتس");
-        widgets.setContentDescription("اختيار وإضافة ويدجتس يومي للشاشة الرئيسية");
-        actions.addView(widgets, new LinearLayout.LayoutParams(0, dp(41), 1.25f));
-        widgets.setOnClickListener(v -> YawmiWidgetLauncher.show(this));
-
         Button update = button("التحديثات");
         update.setContentDescription("فحص تحديثات يومي الرسمية");
         actions.addView(update, new LinearLayout.LayoutParams(0, dp(41), 1.0f));
