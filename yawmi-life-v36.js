@@ -290,7 +290,7 @@ function handleDeepLink(){
  if(usedDeepLink||!canWrite())return;
  let url;try{url=new URL(window.location.href)}catch(_){return}
  const quick=url.searchParams.get('quick');
- if(!['tasks','habits','calendar'].includes(quick))return;
+ if(!['home','tasks','habits','calendar','journey','reports','goals','books','quran','notes','planning','health','routines','diary','money','coach'].includes(quick))return;
  usedDeepLink=true;
  url.searchParams.delete('quick');
  try{window.history.replaceState(null,'',url.pathname+url.search+url.hash)}catch(_){}
