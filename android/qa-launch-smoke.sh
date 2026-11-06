@@ -21,6 +21,22 @@ adb shell uiautomator dump /sdcard/yawmi-views.xml || true
 adb pull /sdcard/yawmi-views.xml /tmp/yawmi-emulator-artifacts/window.xml || true
 adb shell screencap -p /sdcard/yawmi-screenshot.png
 adb pull /sdcard/yawmi-screenshot.png /tmp/yawmi-emulator-artifacts/screenshot.png
+# Confirm the native picker is actionable, not just declared in manifest.
+adb shell input tap 200 200
+sleep 2
+adb shell uiautomator dump /sdcard/yawmi-widget-dialog.xml || true
+adb pull /sdcard/yawmi-widget-dialog.xml /tmp/yawmi-emulator-artifacts/widget-dialog.xml || true
+adb shell screencap -p /sdcard/yawmi-widget-dialog.png
+adb pull /sdcard/yawmi-widget-dialog.png /tmp/yawmi-emulator-artifacts/widget-dialog.png
+if ! grep -F 'ويدجتس يومي' /tmp/yawmi-emulator-artifacts/widget-dialog.xml; then
+  echo 'FAIL: tapping native widget control did not open widget picker' >&2
+  exit 1
+fi
+if ! grep -F '7 من 7' /tmp/yawmi-emulator-artifacts/widget-dialog.xml; then
+  echo 'FAIL: Android cannot discover all seven YAWMI widget providers' >&2
+  exit 1
+fi
+echo 'PASS: native widget picker opens and discovers 7 of 7 widget providers'
 adb logcat -d -b crash > /tmp/yawmi-emulator-artifacts/crash-log.txt
 if grep -F 'Process: com.yawmilife.app' /tmp/yawmi-emulator-artifacts/crash-log.txt; then
   echo "YAWMI native Android process crashed" >&2
