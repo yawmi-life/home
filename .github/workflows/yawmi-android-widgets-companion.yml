@@ -71,6 +71,15 @@ jobs:
           name: YAWMI_WIDGETS_COMPANION_V1_2_0
           path: /tmp/YAWMI-Widgets-v1.2.0-companion.apk
           retention-days: 90
+      - name: Verify widget sync endpoint requires a valid device token
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://afvezxyipdytcuatragm.supabase.co/functions/v1/yawmi-widget-read"
+          BAD="$(curl --max-time 15 -sS -o /tmp/yawmi-invalid.json -w '%{http_code}' -X POST "$URL" -H 'Content-Type: application/json' --data '{"token":"bad"}')"
+          test "$BAD" = "401" || { echo "Unexpected invalid-token HTTP $BAD"; cat /tmp/yawmi-invalid.json; exit 1; }
+          MISSING="$(curl --max-time 15 -sS -o /tmp/yawmi-missing.json -w '%{http_code}' -X POST "$URL" -H 'Content-Type: application/json' --data '{"token":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}')"
+          test "$MISSING" = "404" || { echo "Unexpected unlinked-token HTTP $MISSING"; cat /tmp/yawmi-missing.json; exit 1; }
       - name: Publish companion beta beside existing YAWMI app
         shell: bash
         env:
