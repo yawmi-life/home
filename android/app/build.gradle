@@ -10,8 +10,10 @@ android {
         applicationId 'com.yawmilife.app'
         minSdk 24
         targetSdk 35
-        versionCode 7
-        versionName '1.5.1'
+        // GitHub Actions chooses a monotonically increasing version for each
+        // verified release. Local QA builds retain the explicit baseline.
+        versionCode project.findProperty('yawmiAutoCode') ? Integer.parseInt(project.property('yawmiAutoCode').toString()) : 7
+        versionName project.findProperty('yawmiAutoName') ? project.property('yawmiAutoName').toString() : '1.5.1'
         resConfigs 'ar', 'en'
     }
 
