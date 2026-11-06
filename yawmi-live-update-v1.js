@@ -8,7 +8,7 @@
   const RESUME_MIN_HIDDEN = 20000;
   const seenKey = 'yawmi-web-update-reload-' + THIS_REVISION;
   const releaseURL = './site-version.json';
-  const isPublicPage = location.protocol === 'https:' || location.hostname === 'localhost';
+  const isPublicPage = location.protocol === 'https:' || ['localhost','127.0.0.1'].includes(location.hostname);
   if (!isPublicPage) return;
   let lastCheck = 0, checking = false, pending = false, hiddenAt = null, banner = null;
   let lastPublishedStamp = null;
