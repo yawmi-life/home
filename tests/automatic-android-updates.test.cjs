@@ -58,3 +58,29 @@ test('Future Uptodown installs do not compete with built-in Android updater', ()
   assert.match(manager, /isUptodownManaged\(activity\)/);
   assert.match(worker, /isUptodownManaged\(context\)/);
 });
+
+test('Android updater checks a public CDN manifest with GitHub API fallback', () => {
+  const updater = read('android/app/src/main/java/com/yawmilife/app/YawmiUpdateManager.java');
+  const worker = read('android/app/src/main/java/com/yawmilife/app/YawmiUpdateWorker.java');
+  assert.match(updater, /raw\.githubusercontent\.com\/yawmi-life\/home\/main\/android-latest\.json/);
+  assert.match(updater, /return requestJson\(API\)/);
+  assert.match(updater, /last_github_fallback_probe/);
+  assert.match(worker, /officialRelease\(context\)/);
+});
+
+test('Download completion immediately queues verification without manual UI', () => {
+  const receiver = read('android/app/src/main/java/com/yawmilife/app/YawmiDownloadCompletedReceiver.java');
+  const manifest = read('android/app/src/main/AndroidManifest.xml');
+  assert.match(receiver, /ACTION_DOWNLOAD_COMPLETE/);
+  assert.match(receiver, /OneTimeWorkRequest\.Builder/);
+  assert.match(manifest, /android\.intent\.action\.DOWNLOAD_COMPLETE/);
+  assert.match(manifest, /android\.permission\.SEND_DOWNLOAD_COMPLETED_INTENTS/);
+});
+
+test('Only releases signed with original key can publish public update feed', () => {
+  const workflow = read('.github/workflows/yawmi-android-apk.yml');
+  assert.match(workflow, /Publish public update feed after original-signed GitHub release/);
+  assert.match(workflow, /android-latest\.json/);
+  assert.match(workflow, /if: env\.SIGNING_READY == 'true'/);
+  assert.match(workflow, /sha256sum/);
+});
