@@ -21,26 +21,25 @@ adb shell uiautomator dump /sdcard/yawmi-views.xml || true
 adb pull /sdcard/yawmi-views.xml /tmp/yawmi-emulator-artifacts/window.xml || true
 adb shell screencap -p /sdcard/yawmi-screenshot.png
 adb pull /sdcard/yawmi-screenshot.png /tmp/yawmi-emulator-artifacts/screenshot.png
-# Confirm the native picker is actionable, not just declared in manifest.
-adb shell input tap 200 200
-sleep 2
-adb shell uiautomator dump /sdcard/yawmi-widget-dialog.xml || true
-adb pull /sdcard/yawmi-widget-dialog.xml /tmp/yawmi-emulator-artifacts/widget-dialog.xml || true
-adb shell screencap -p /sdcard/yawmi-widget-dialog.png
-adb pull /sdcard/yawmi-widget-dialog.png /tmp/yawmi-emulator-artifacts/widget-dialog.png
-if ! grep -F 'ويدجتس يومي' /tmp/yawmi-emulator-artifacts/widget-dialog.xml; then
-  echo 'FAIL: tapping native widget control did not open widget picker' >&2
+# Native launcher widgets must be registered by Android, not an in-app menu.
+for provider in \
+  'YawmiShortcutWidget' \
+  'YawmiCategoryWidget$Today' \
+  'YawmiCategoryWidget$Productivity' \
+  'YawmiCategoryWidget$Planning' \
+  'YawmiCategoryWidget$Learning' \
+  'YawmiCategoryWidget$Wellbeing' \
+  'YawmiCategoryWidget$Life'; do
+  if ! grep -F "$provider" /tmp/yawmi-emulator-artifacts/package.txt >/dev/null; then
+    echo "FAIL: missing Android launcher AppWidgetProvider: $provider" >&2
+    exit 1
+  fi
+done
+if grep -Eq 'ويدجتس شاشة الهاتف|▦ الويدجتس|ربط ويدجتس الهاتف' /tmp/yawmi-emulator-artifacts/window.xml; then
+  echo 'FAIL: obsolete widget controls remain INSIDE YAWMI app' >&2
   exit 1
 fi
-if ! grep -F '7 من 7' /tmp/yawmi-emulator-artifacts/widget-dialog.xml; then
-  echo 'FAIL: Android cannot discover all seven YAWMI widget providers' >&2
-  exit 1
-fi
-if ! grep -F 'لوحة اليوم' /tmp/yawmi-emulator-artifacts/widget-dialog.xml; then
-  echo 'FAIL: widget choices are hidden by the dialog layout' >&2
-  exit 1
-fi
-echo 'PASS: native widget picker opens, shows choices and discovers 7 of 7 widget providers'
+echo 'PASS: seven native Android home-screen widgets registered and zero in-app widget controls'
 adb logcat -d -b crash > /tmp/yawmi-emulator-artifacts/crash-log.txt
 if grep -F 'Process: com.yawmilife.app' /tmp/yawmi-emulator-artifacts/crash-log.txt; then
   echo "YAWMI native Android process crashed" >&2
