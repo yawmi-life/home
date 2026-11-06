@@ -9,6 +9,14 @@ adb shell dumpsys activity activities > /tmp/yawmi-activity.txt
 grep -F 'com.yawmilife.app/.YawmiMainActivity' /tmp/yawmi-activity.txt
 adb shell pidof com.yawmilife.app
 mkdir -p /tmp/yawmi-emulator-artifacts
+adb shell dumpsys package com.yawmilife.app > /tmp/yawmi-emulator-artifacts/package.txt
+adb shell dumpsys appwidget > /tmp/yawmi-emulator-artifacts/widgets.txt
+if ! grep -q 'YawmiCategoryWidget' /tmp/yawmi-emulator-artifacts/package.txt; then
+  echo 'FAIL: native widget receivers missing from installed YAWMI package' >&2
+  exit 1
+fi
+echo 'PASS: native widget receivers registered in installed YAWMI Android APK'
+mkdir -p /tmp/yawmi-emulator-artifacts
 adb shell uiautomator dump /sdcard/yawmi-views.xml || true
 adb pull /sdcard/yawmi-views.xml /tmp/yawmi-emulator-artifacts/window.xml || true
 adb shell screencap -p /sdcard/yawmi-screenshot.png
