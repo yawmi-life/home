@@ -33,10 +33,10 @@ function makeSnapshot(){
  return Object.fromEntries(Object.entries(obj).map(([k,v])=>[k,k==='day'?v:Math.min(100000000,Math.max(0,Number(v)||0))]));
 }
 function say(message,bad=false){const area=$('yawmiNativeWidgetStatus');if(area){area.textContent=message;area.dataset.error=bad?'true':'false';}}
-const widgetIntent=(host,token='')=>'intent://'+host+(token?'?token='+encodeURIComponent(token):'')+'#Intent;scheme=yawmiwidget;package=com.yawmilife.app;end';
+const widgetIntent=(host,token='',pkg='com.yawmilife.app.widgets')=>'intent://'+host+(token?'?token='+encodeURIComponent(token):'')+'#Intent;scheme=yawmiwidget;package='+pkg+';end';
 function setPendingLink(token,user){
  pendingToken=token;pendingUser=user;
- const b=$('yawmiNativeWidgetFinish');if(b){b.hidden=!token;b.textContent='📱 إكمال التفعيل على هذا الهاتف';}
+ const b=$('yawmiNativeWidgetFinish');if(b){b.hidden=!token;b.textContent='📱 تفعيل ويدجتس يومي على هذا الهاتف';}const alt=$('yawmiNativeWidgetFinishMain');if(alt)alt.hidden=!token;
 }
 async function digest(value){
  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));
@@ -61,12 +61,12 @@ async function pair(){
  }catch(err){say('تعذّر ربط الويدجت: '+String(err.message||err),true)}
  finally{if(b)b.disabled=false}
 }
-function finishPair(){
+function finishPair(pkg='com.yawmilife.app.widgets'){
  if(!pendingToken||!authorized()||cloud().currentUser.id!==pendingUser){
   setPendingLink('','');say('انتهت جلسة التفعيل. ابدأ الربط مرة أخرى.',true);return;
  }
  // Must be a direct, user-initiated click; no auth JWT or personal data in the URI.
- window.location.href=widgetIntent('link',pendingToken);
+ window.location.href=widgetIntent('link',pendingToken,pkg);
  setPendingLink('','');
  say('تم إرسال أمر الربط لأندرويد. أضف ويدجت «يومي» من الشاشة الرئيسية.');
 }
@@ -106,7 +106,7 @@ function mount(){
  ui=document.createElement('section');ui.id='yawmiNativeWidgetsPanel';
  ui.innerHTML='<div class="yn-head"><span class="yn-emoji">▦</span><div><h2>ويدجتس شاشة الهاتف</h2><p>تابع مهامك وعاداتك وXP والمياه خارج التطبيق، من شاشة Android الرئيسية.</p></div></div>'+
  '<div class="yn-actions"><button type="button" id="yawmiNativeWidgetPair">ربط ويدجتس الهاتف</button>'+
- '<button type="button" id="yawmiNativeWidgetFinish" hidden>📱 إكمال التفعيل على هذا الهاتف</button>'+
+ '<button type="button" id="yawmiNativeWidgetFinish" hidden>📱 تفعيل ويدجتس يومي</button>'+ '<button type="button" id="yawmiNativeWidgetFinishMain" hidden>الربط بالتطبيق الأصلي بعد تحديثه</button>'+
  '<button type="button" id="yawmiNativeWidgetUnlink">فصل جميع الأجهزة</button>'+
  '<button type="button" id="yawmiNativeWidgetClear" hidden>مسح القيم من هذا الهاتف</button></div>'+
  '<p id="yawmiNativeWidgetStatus" role="status">تُعرض الملخصات فقط، دون أسماء المهام أو البيانات الخاصة. تأكد من تثبيت APK حديث.</p>'+
@@ -129,7 +129,8 @@ function mount(){
  `;
  document.head.appendChild(css);
  $('yawmiNativeWidgetPair').addEventListener('click',pair);
- $('yawmiNativeWidgetFinish').addEventListener('click',finishPair);
+ $('yawmiNativeWidgetFinish').addEventListener('click',()=>finishPair());
+ $('yawmiNativeWidgetFinishMain').addEventListener('click',()=>finishPair('com.yawmilife.app'));
  $('yawmiNativeWidgetUnlink').addEventListener('click',disconnect);
  $('yawmiNativeWidgetClear').addEventListener('click',()=>{window.location.href=widgetIntent('unlink')});
  if(!isAndroid())say('الربط يتم من هاتف Android المثبّت عليه يومي. سيظهر خيار التفعيل هناك.');
