@@ -69,7 +69,7 @@ public final class YawmiUpdateWorker extends Worker {
             // screen. Never download another copy while approval is pending.
             if (state.getBoolean("os_update_confirmation_pending", false)) return Result.success();
 
-            JSONObject latest = YawmiUpdateManager.officialRelease();
+            JSONObject latest = YawmiUpdateManager.officialRelease(context);
             if (latest.optBoolean("draft") || latest.optBoolean("prerelease"))
                 return Result.success();
             String tag = latest.optString("tag_name", "");
