@@ -90,7 +90,7 @@ final class YawmiUpdateManager {
         }
         // After Uptodown distribution is enabled, let its installed app
         // manage APK updates for devices installed through that store.
-        if (isUptodownManaged()) return;
+        if (isUptodownManaged(activity)) return;
         long now = System.currentTimeMillis();
         long last = state().getLong(KEY_LAST_CHECK, 0L);
         if (!manuallyRequested && now - last < AUTO_INTERVAL && now >= last) return;
@@ -159,7 +159,7 @@ final class YawmiUpdateManager {
     }
 
     static int[] parseVersion(String tag) {
-        if (!tag.matches("^android-v[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$")) return null;
+        if (!tag.matches("^android-v[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,9}$")) return null;
         String[] parts = tag.substring("android-v".length()).split("\\.");
         return new int[]{Integer.parseInt(parts[0]),Integer.parseInt(parts[1]),Integer.parseInt(parts[2])};
     }
@@ -338,15 +338,15 @@ final class YawmiUpdateManager {
             toast("تعذّر فتح مُثبّت Android. تأكد من سماح جهازك بتحديثات APK.");
         }
     }
-    private boolean isUptodownManaged() {
+    static boolean isUptodownManaged(Context app) {
         String installer = null;
         try {
-            PackageManager pm = activity.getPackageManager();
+            PackageManager pm = app.getPackageManager();
             if (Build.VERSION.SDK_INT >= 30) {
-                installer = pm.getInstallSourceInfo(activity.getPackageName())
+                installer = pm.getInstallSourceInfo(app.getPackageName())
                     .getInstallingPackageName();
             } else {
-                installer = pm.getInstallerPackageName(activity.getPackageName());
+                installer = pm.getInstallerPackageName(app.getPackageName());
             }
         } catch (Exception ignored) {}
         return installer != null && installer.toLowerCase(Locale.ROOT).contains("uptodown");
