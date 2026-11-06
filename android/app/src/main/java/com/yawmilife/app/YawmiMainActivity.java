@@ -154,7 +154,8 @@ public final class YawmiMainActivity extends Activity {
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
-                WebResourceResponse bundled = bundledAuthSdk(req.getUrl(), req.getMethod());\n                return bundled != null ? bundled : localAsset(req.getUrl(), req.getMethod());
+                WebResourceResponse bundled = bundledAuthSdk(req.getUrl(), req.getMethod());
+                return bundled != null ? bundled : localAsset(req.getUrl(), req.getMethod());
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return route(request.getUrl());
