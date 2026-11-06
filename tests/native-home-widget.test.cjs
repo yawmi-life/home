@@ -27,5 +27,6 @@ test('web pages no longer mount widget controls but retain headless account sync
   assert.match(bridge,/yawmi_widget_snapshots/);
   for(const skin of ['01_ATLAS_Executive.html','02_JOURNAL_Editorial.html','03_QUEST_RPG.html']){
     assert.match(read(skin),/yawmi-native-widgets-v1\.js\?v=2/);
+    assert.doesNotMatch(read(skin),/yawmi-widgets-v1\.js/);
   }
 });
