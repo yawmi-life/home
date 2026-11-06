@@ -1,0 +1,6 @@
+{
+  "revision": "web-2026-11-06-38",
+  "date": "2026-11-06",
+  "channel": "web",
+  "notes": "Site PWA live updates; native APK requires OS installer confirmation"
+}
