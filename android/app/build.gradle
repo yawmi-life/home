@@ -28,7 +28,11 @@ android {
         release {
             minifyEnabled false
             shrinkResources false
-            signingConfig signingConfigs.release
+            // QA can produce an unsigned RELEASE APK. Signing occurs only with
+            // the verified original keystore, never with a new debug identity.
+            if (System.getenv('YAWMI_KEYSTORE_PATH') && file(System.getenv('YAWMI_KEYSTORE_PATH')).isFile()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
