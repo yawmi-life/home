@@ -36,7 +36,11 @@ if ! grep -F '7 من 7' /tmp/yawmi-emulator-artifacts/widget-dialog.xml; then
   echo 'FAIL: Android cannot discover all seven YAWMI widget providers' >&2
   exit 1
 fi
-echo 'PASS: native widget picker opens and discovers 7 of 7 widget providers'
+if ! grep -F 'لوحة اليوم' /tmp/yawmi-emulator-artifacts/widget-dialog.xml; then
+  echo 'FAIL: widget choices are hidden by the dialog layout' >&2
+  exit 1
+fi
+echo 'PASS: native widget picker opens, shows choices and discovers 7 of 7 widget providers'
 adb logcat -d -b crash > /tmp/yawmi-emulator-artifacts/crash-log.txt
 if grep -F 'Process: com.yawmilife.app' /tmp/yawmi-emulator-artifacts/crash-log.txt; then
   echo "YAWMI native Android process crashed" >&2
