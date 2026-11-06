@@ -99,7 +99,7 @@ final class YawmiUpdateManager {
         checking = true;
         executor.execute(() -> {
             try {
-                JSONObject release = officialRelease();
+                JSONObject release = officialRelease(activity);
                 if (release.optBoolean("draft") || release.optBoolean("prerelease"))
                     throw new IllegalStateException("غير متاح إصدار مستقر");
                 String tag = release.optString("tag_name", "");
@@ -205,7 +205,7 @@ final class YawmiUpdateManager {
      * this file after original-certificate verification and signed release.
      * GitHub Releases/latest is a safe fallback if feed is not configured yet.
      */
-    static JSONObject officialRelease() throws Exception {
+    static JSONObject officialRelease(Context context) throws Exception {
         try {
             JSONObject feed = requestJson(FEED);
             String tag = feed.optString("tag", "");
@@ -220,11 +220,36 @@ final class YawmiUpdateManager {
                 asset.put("browser_download_url",apk);
                 asset.put("size",bytes);
                 asset.put("digest","sha256:"+digest);
-                return new JSONObject()
+                JSONObject feedRelease = new JSONObject()
                     .put("tag_name",tag)
                     .put("draft",false)
                     .put("prerelease",false)
                     .put("assets",new JSONArray().put(asset));
+                // Even if CDN publishing later stalls, every device checks
+                // GitHub's latest release at most once daily when it has
+                // already caught up with its CDN feed.
+                try {
+                    PackageInfo installedInfo = context.getPackageManager()
+                        .getPackageInfo(context.getPackageName(), 0);
+                    int[] installed = parseVersion("android-v" + installedInfo.versionName);
+                    int[] feedVersion = parseVersion(tag);
+                    if (installed != null && compare(feedVersion, installed) <= 0) {
+                        SharedPreferences prefs = context.getSharedPreferences(
+                            PREFS,Context.MODE_PRIVATE);
+                        long now = System.currentTimeMillis();
+                        long last = prefs.getLong("last_github_fallback_probe",0);
+                        if (now-last > 24L * 60L * 60L * 1000) {
+                            prefs.edit().putLong("last_github_fallback_probe",now).apply();
+                            try {
+                                JSONObject api = requestJson(API);
+                                int[] live = parseVersion(api.optString("tag_name",""));
+                                if (live != null && compare(live,feedVersion) > 0)
+                                    return api;
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                } catch (Exception ignored) {}
+                return feedRelease;
             }
         } catch (Exception ignored) {
             // Unpublished or unreachable feed. Fall back to the stable API.
