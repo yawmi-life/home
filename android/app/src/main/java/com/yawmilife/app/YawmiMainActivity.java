@@ -154,7 +154,7 @@ public final class YawmiMainActivity extends Activity {
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
-                return localAsset(req.getUrl(), req.getMethod());
+                WebResourceResponse bundled = bundledAuthSdk(req.getUrl(), req.getMethod());\n                return bundled != null ? bundled : localAsset(req.getUrl(), req.getMethod());
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return route(request.getUrl());
@@ -214,6 +214,19 @@ public final class YawmiMainActivity extends Activity {
                 Toast.makeText(this, "لتنزيل النسخ الاحتياطية افتح يومي من زر «المتصفح».", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private WebResourceResponse bundledAuthSdk(Uri uri, String method) {
+        if (uri == null || !"GET".equalsIgnoreCase(method) ||
+            !"https".equalsIgnoreCase(uri.getScheme()) ||
+            !"cdn.jsdelivr.net".equalsIgnoreCase(uri.getHost()) ||
+            !"/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js".equals(uri.getPath())) return null;
+        try {
+            InputStream in = getAssets().open("vendor/supabase.min.js");
+            return new WebResourceResponse("text/javascript", "UTF-8", in);
+        } catch (Exception notBundled) {
+            return null;
+        }
     }
 
     private WebResourceResponse localAsset(Uri uri, String method) {
