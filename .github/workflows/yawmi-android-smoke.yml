@@ -56,22 +56,11 @@ jobs:
           profile: pixel_2
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
           disable-animations: true
-          script: |
-            set -eu
-            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-            adb shell am force-stop com.yawmilife.app || true
-            adb shell am start -W -n com.yawmilife.app/.YawmiMainActivity | tee /tmp/yawmi-launch.txt
-            sleep 12
-            adb shell dumpsys activity activities > /tmp/yawmi-activity.txt
-            grep -F 'com.yawmilife.app/.YawmiMainActivity' /tmp/yawmi-activity.txt
-            adb shell uiautomator dump /sdcard/yawmi-views.xml >/tmp/yawmi-uiauto.txt || true
-            adb shell cat /sdcard/yawmi-views.xml > /tmp/yawmi-ui.xml || true
-            if ! grep -F 'يومي' /tmp/yawmi-ui.xml; then
-              echo "UI capture not available; require activity and crash logs as minimum."
-            fi
-            adb logcat -d -b crash > /tmp/yawmi-crash.txt
-            if grep -E 'FATAL EXCEPTION|com.yawmilife.app' /tmp/yawmi-crash.txt; then
-              echo "Native Android crash detected" >&2
-              exit 1
-            fi
-            echo "Android launch / widget-enabled package smoke test passed"
+          script: bash android/qa-launch-smoke.sh
+      - name: Save emulator screenshot and process diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: YAWMI_ANDROID_1_3_0_EMULATOR_SCREEN
+          path: /tmp/yawmi-emulator-artifacts/
+          retention-days: 7
