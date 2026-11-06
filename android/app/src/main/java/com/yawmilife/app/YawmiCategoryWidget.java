@@ -32,7 +32,7 @@ public abstract class YawmiCategoryWidget extends AppWidgetProvider {
         return d.equals(s.optString("day",""));
     }
     private PendingIntent open(Context c,String target,int code){
-        Intent i=new Intent(c,com.google.androidbrowserhelper.trusted.LauncherActivity.class);
+        Intent i=new Intent(c,YawmiMainActivity.class);
         i.setAction(Intent.ACTION_VIEW);
         i.setData(Uri.parse(ROOT+Uri.encode(target)));
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
