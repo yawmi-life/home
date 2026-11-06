@@ -104,28 +104,51 @@ public final class YawmiMainActivity extends Activity {
         shell.setBackgroundColor(VIOLET);
         shell.setOrientation(LinearLayout.VERTICAL);
         LinearLayout header = new LinearLayout(this);
-        header.setPadding(dp(14), dp(5), dp(10), dp(5));
-        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setPadding(dp(10), dp(5), dp(10), dp(5));
         header.setBackgroundColor(VIOLET);
+
+        LinearLayout heading = new LinearLayout(this);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
         TextView title = text("✦ يومي LifeOS", Color.WHITE, 15);
         title.setTypeface(null, 1);
-        header.addView(title, new LinearLayout.LayoutParams(0, dp(39), 1f));
+        heading.addView(title, new LinearLayout.LayoutParams(0, dp(30), 1f));
+        String version = "";
+        try {
+            version = getPackageManager().getPackageInfo(getPackageName(),0).versionName;
+        } catch(Exception ignored){}
+        TextView versionLabel = text("APK " + version, Color.rgb(210,202,242), 11);
+        versionLabel.setContentDescription("نسخة تطبيق يومي الأصلية: "+version);
+        heading.addView(versionLabel, new LinearLayout.LayoutParams(-2, dp(30)));
+        header.addView(heading);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        Button widgets = button("▦ الويدجتس");
+        widgets.setContentDescription("اختيار وإضافة ويدجتس يومي للشاشة الرئيسية");
+        actions.addView(widgets, new LinearLayout.LayoutParams(0, dp(41), 1.25f));
+        widgets.setOnClickListener(v -> YawmiWidgetLauncher.show(this));
+
         Button update = button("التحديثات");
         update.setContentDescription("فحص تحديثات يومي الرسمية");
-        header.addView(update, new LinearLayout.LayoutParams(dp(88), dp(39)));
+        actions.addView(update, new LinearLayout.LayoutParams(0, dp(41), 1.0f));
         update.setOnClickListener(v -> {
             if (updates != null) updates.check(true);
         });
-        Button browser = button("المتصفح");
-        browser.setContentDescription("فتح يومي في متصفح الهاتف");
-        header.addView(browser, new LinearLayout.LayoutParams(dp(86), dp(39)));
+
+        Button browser = button("ويب");
+        browser.setContentDescription("فتح يومي من المتصفح");
+        actions.addView(browser, new LinearLayout.LayoutParams(dp(54), dp(41)));
         browser.setOnClickListener(v -> openBrowser());
+
         Button retry = button("↻");
-        retry.setContentDescription("إعادة تحميل يومي");
-        header.addView(retry, new LinearLayout.LayoutParams(dp(49), dp(39)));
+        retry.setContentDescription("إعادة تحميل واجهة يومي");
+        actions.addView(retry, new LinearLayout.LayoutParams(dp(46), dp(41)));
         retry.setOnClickListener(v -> reload());
+
+        header.addView(actions);
         shell.addView(header);
-        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progress = new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
         progress.setIndeterminate(true);
         shell.addView(progress, new LinearLayout.LayoutParams(-1, dp(3)));
         content = new FrameLayout(this);
@@ -133,7 +156,7 @@ public final class YawmiMainActivity extends Activity {
         status = text("", Color.WHITE, 12);
         status.setPadding(dp(14), dp(7), dp(14), dp(7));
         status.setVisibility(View.GONE);
-        shell.addView(status, new LinearLayout.LayoutParams(-1, -2));
+        shell.addView(status,new LinearLayout.LayoutParams(-1,-2));
         setContentView(shell);
     }
 
