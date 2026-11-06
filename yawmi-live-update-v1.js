@@ -11,6 +11,8 @@
   const isPublicPage = location.protocol === 'https:' || location.hostname === 'localhost';
   if (!isPublicPage) return;
   let lastCheck = 0, checking = false, pending = false, hiddenAt = null, banner = null;
+  let lastPublishedStamp = null;
+  let hadServiceWorker = !!navigator.serviceWorker?.controller;
   document.documentElement.dataset.yawmiSiteVersion = THIS_REVISION;
 
   function hasActiveEditing() {
@@ -79,9 +81,19 @@
       const response = await fetch(releaseURL + '?nocache=' + Date.now(),
         {cache:'no-store',credentials:'same-origin'});
       if (!response.ok) return;
+      // GitHub Pages changes the Last-Modified / ETag of published files at
+      // deploy time. Detect any future site deployment, even when the static
+      // site's revision JSON was not manually bumped by its editor.
+      const publishedStamp = response.headers.get('etag') ||
+        response.headers.get('last-modified');
       const metadata = await response.json();
       if (typeof metadata.revision !== 'string' || !/^web-[a-zA-Z0-9-]{1,64}$/.test(metadata.revision)) return;
-      if (metadata.revision !== THIS_REVISION) {
+      const contentUpdate = metadata.revision !== THIS_REVISION;
+      const deploymentChanged = !!(
+        publishedStamp && lastPublishedStamp && publishedStamp !== lastPublishedStamp
+      );
+      if (publishedStamp) lastPublishedStamp = publishedStamp;
+      if (contentUpdate || deploymentChanged) {
         pending = true;
         applyIfSafe(resumed);
       }
@@ -90,6 +102,10 @@
   }
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // Initial worker installation is not a new release.
+      const wasControlled = hadServiceWorker;
+      hadServiceWorker = true;
+      if (!wasControlled) return;
       // Don't interrupt typing; the next foreground resume applies updates.
       pending = true;
       applyIfSafe(false);
