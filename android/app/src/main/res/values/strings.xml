@@ -3,4 +3,11 @@
     <string name="app_name">يومي LifeOS</string>
     <string name="asset_statements" translatable="false">[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"web","site":"https://yawmi-life.github.io"}}]</string>
     <string name="yawmi_widget_desc">اختصارات يومي للمهام والعادات والتقويم</string>
+    <string name="yawmi_widget_collection_desc">ويدجتس يومي للشاشة الرئيسية، مع اختصارات خاصة وآمنة للأقسام</string>
+    <string name="yawmi_widget_today">يومي · لوحة اليوم</string>
+    <string name="yawmi_widget_productivity">يومي · الإنتاجية</string>
+    <string name="yawmi_widget_planning">يومي · التخطيط</string>
+    <string name="yawmi_widget_learning">يومي · القراءة والقرآن</string>
+    <string name="yawmi_widget_wellbeing">يومي · صحتي وروتيني</string>
+    <string name="yawmi_widget_life">يومي · شؤون حياتي</string>
 </resources>
