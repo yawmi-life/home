@@ -105,11 +105,11 @@ function mount(){
  const home=$('page-home');if(!home||ui)return;
  ui=document.createElement('section');ui.id='yawmiNativeWidgetsPanel';
  ui.innerHTML='<div class="yn-head"><span class="yn-emoji">▦</span><div><h2>ويدجتس شاشة الهاتف</h2><p>تابع مهامك وعاداتك وXP والمياه خارج التطبيق، من شاشة Android الرئيسية.</p></div></div>'+
- '<div class="yn-actions"><button type="button" id="yawmiNativeWidgetPair">ربط ويدجتس الهاتف</button>'+
+ '<div class="yn-actions"><a class="yn-download" href="https://github.com/yawmi-life/home/releases/download/android-widgets-v1.2.0-beta/YAWMI-Widgets-v1.2.0-companion.apk" rel="noopener noreferrer">⬇ تنزيل تطبيق الويدجتس</a><button type="button" id="yawmiNativeWidgetPair">ربط ويدجتس الهاتف</button>'+
  '<button type="button" id="yawmiNativeWidgetFinish" hidden>📱 تفعيل ويدجتس يومي</button>'+ '<button type="button" id="yawmiNativeWidgetFinishMain" hidden>الربط بالتطبيق الأصلي بعد تحديثه</button>'+
  '<button type="button" id="yawmiNativeWidgetUnlink">فصل جميع الأجهزة</button>'+
  '<button type="button" id="yawmiNativeWidgetClear" hidden>مسح القيم من هذا الهاتف</button></div>'+
- '<p id="yawmiNativeWidgetStatus" role="status">تُعرض الملخصات فقط، دون أسماء المهام أو البيانات الخاصة. تأكد من تثبيت APK حديث.</p>'+
+ '<p id="yawmiNativeWidgetStatus" role="status">تُعرض الملخصات فقط، دون أسماء المهام أو البيانات الخاصة. ثبّت «يومي ويدجتس» أولًا من الرابط أعلاه.</p>'+
  '<small>بعد التفعيل، اضغط مطوّلًا على شاشة الهاتف الرئيسية ← الويدجتس ← يومي LifeOS. التحديث الدوري حسب قيود أندرويد.</small>';
  const anchor=home.querySelector('.date-row');
  if(anchor)home.insertBefore(ui,anchor);else home.appendChild(ui);
@@ -120,7 +120,7 @@ function mount(){
  #yawmiNativeWidgetsPanel h2{font-size:18px;font-weight:900;margin:0 0 3px}
  #yawmiNativeWidgetsPanel p{color:var(--muted,#bcb7d3);font-size:12px;line-height:1.8;margin:0}
  #yawmiNativeWidgetsPanel .yn-actions{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0 11px}
- #yawmiNativeWidgetsPanel button{border:1px solid var(--border,#555);background:var(--accent-faint,rgba(150,110,250,.18));color:var(--text,#fff);border-radius:11px;padding:10px 13px;font:800 12px Cairo,Tahoma,sans-serif;cursor:pointer}
+ #yawmiNativeWidgetsPanel button,#yawmiNativeWidgetsPanel .yn-download{border:1px solid var(--border,#555);background:var(--accent-faint,rgba(150,110,250,.18));color:var(--text,#fff);border-radius:11px;padding:10px 13px;font:800 12px Cairo,Tahoma,sans-serif;cursor:pointer}
  #yawmiNativeWidgetPair{background:var(--accent,#ab91fc)!important;color:var(--on-accent,#141226)!important}
  #yawmiNativeWidgetsPanel button:disabled{opacity:.5}
  #yawmiNativeWidgetsPanel button[hidden]{display:none!important}
