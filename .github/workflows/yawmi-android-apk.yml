@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: yawmi-android-release-verified
@@ -67,11 +68,13 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Restore original signing identity only if GitHub secrets are configured
+      - name: Restore ORIGINAL Android signing identity (never generate a replacement key)
         shell: bash
         env:
           STORED_KEY_B64: ${{ secrets.YAWMI_ANDROID_KEYSTORE_B64 }}
           STORED_KEY_PASS: ${{ secrets.YAWMI_ANDROID_KEYSTORE_PASSWORD }}
+          RECOVERY_PRIVATE_KEY_B64: ${{ secrets.YAWMI_SIGNING_RECOVERY_PRIVATE_KEY_B64 }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           echo "SIGNING_READY=false" >> "$GITHUB_ENV"
@@ -79,14 +82,37 @@ jobs:
           if [[ -n "$STORED_KEY_B64" && -n "$STORED_KEY_PASS" ]]; then
             printf '%s' "$STORED_KEY_B64" | base64 -d > "$KEY_PATH"
             KEY_PASS="$STORED_KEY_PASS"
-            echo "Using existing private signing identity from GitHub Actions secrets"
+            echo "Using securely stored original Android keystore"
+          elif [[ -n "$RECOVERY_PRIVATE_KEY_B64" ]]; then
+            RECOVERY="$RUNNER_TEMP/yawmi-signing-recovery"
+            mkdir -p "$RECOVERY"
+            gh run download 42038925659 --repo "$GITHUB_REPOSITORY" \
+              --name YAWMI_ANDROID_ENCRYPTED_SIGNING_BACKUP_DO_NOT_DELETE \
+              --dir "$RECOVERY"
+            printf '%s' "$RECOVERY_PRIVATE_KEY_B64" | base64 -d > "$RECOVERY/recovery-private-key.pem"
+            chmod 600 "$RECOVERY/recovery-private-key.pem"
+            openssl cms -decrypt -binary -inform DER \
+              -in "$RECOVERY/signing-backup.cms" \
+              -recip android/signing-backup-public-cert.pem \
+              -inkey "$RECOVERY/recovery-private-key.pem" \
+              -out "$RECOVERY/original-keystore-backup.tar.gz"
+            tar -xzf "$RECOVERY/original-keystore-backup.tar.gz" \
+              -C "$RECOVERY" ./yawmi-release.jks ./signing-password.txt
+            cp "$RECOVERY/yawmi-release.jks" "$KEY_PATH"
+            KEY_PASS="$(cat "$RECOVERY/signing-password.txt")"
+            echo "::add-mask::$KEY_PASS"
+            rm -f "$RECOVERY/recovery-private-key.pem" "$RECOVERY/signing-password.txt" \
+                  "$RECOVERY/original-keystore-backup.tar.gz"
+            echo "Recovered the ORIGINAL signing identity from the encrypted 2026-11-05 backup"
           else
-            echo "Original signing key not configured. A debug QA APK was built, but public v1.0.0 won't be replaced or given a different signing key." >> "$GITHUB_STEP_SUMMARY"
+            echo "WARNING: Original signing identity unavailable. QA debug APK only; NO release APK is published." >> "$GITHUB_STEP_SUMMARY"
+            echo "Provide either both YAWMI_ANDROID_KEYSTORE_B64 and YAWMI_ANDROID_KEYSTORE_PASSWORD, OR YAWMI_SIGNING_RECOVERY_PRIVATE_KEY_B64 in Actions secrets." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          chmod 600 "$KEY_PATH"
           FINGERPRINT="$(keytool -list -v -keystore "$KEY_PATH" -alias yawmi -storepass "$KEY_PASS" | sed -n 's/.*SHA256: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           if [[ "$FINGERPRINT" != "c9411aebc383ec8200177d6bc2af79560290c4f0a1035b45baadccf1afb6f3d8" ]]; then
-            echo "Refusing update: wrong signing key. Must match original Android v1.0.0 certificate." >&2
+            echo "Refusing update: signing certificate differs from original v1.0.0" >&2
             exit 1
           fi
           echo "SIGNING_READY=true" >> "$GITHUB_ENV"
