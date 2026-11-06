@@ -78,17 +78,27 @@ jobs:
           test "$(wc -c < android/app/src/main/assets/vendor/supabase.min.js)" -gt 100000
           sha256sum android/app/src/main/assets/vendor/supabase.min.js
 
+      - name: Assign monotonic release version automatically
+        shell: bash
+        run: |
+          set -euo pipefail
+          CODE="$((100000 + GITHUB_RUN_NUMBER))"
+          NAME="1.5.${GITHUB_RUN_NUMBER}"
+          echo "YAWMI_CI_CODE=$CODE" >> "$GITHUB_ENV"
+          echo "YAWMI_CI_NAME=$NAME" >> "$GITHUB_ENV"
+          echo "Building YAWMI original APK: v$NAME / versionCode $CODE" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build widget debug APK (testing only — not a signed public update)
         shell: bash
         run: |
-          gradle -p android --no-daemon :app:assembleDebug
+          gradle -p android --no-daemon :app:assembleDebug -PyawmiAutoCode="$YAWMI_CI_CODE" -PyawmiAutoName="$YAWMI_CI_NAME"
           test -s android/app/build/outputs/apk/debug/app-debug.apk
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk | head -12
 
       - name: Upload widget debug build for QA
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_V1_5_1_WIDGET_DEBUG_NOT_A_PUBLIC_UPDATE
+          name: YAWMI_ANDROID_AUTO_VERSION_WIDGET_DEBUG_QA_ONLY
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
@@ -96,12 +106,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gradle -p android --no-daemon :app:assembleRelease --stacktrace
+          gradle -p android --no-daemon :app:assembleRelease --stacktrace -PyawmiAutoCode="$YAWMI_CI_CODE" -PyawmiAutoName="$YAWMI_CI_NAME"
           APK='android/app/build/outputs/apk/release/app-release-unsigned.apk'
           test -s "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/yawmi-release-manifest.txt
           grep -F "package: name='com.yawmilife.app'" /tmp/yawmi-release-manifest.txt
-          grep -F "versionCode='7'" /tmp/yawmi-release-manifest.txt
+          grep -F "versionCode='$YAWMI_CI_CODE'" /tmp/yawmi-release-manifest.txt
           if grep -F 'application-debuggable' /tmp/yawmi-release-manifest.txt; then
             echo "Refusing to distribute a debuggable release" >&2
             exit 1
@@ -110,7 +120,7 @@ jobs:
       - name: Upload original-app unsigned release package
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_V1_5_1_UNSIGNED_RELEASE_FOR_ORIGINAL_KEY_ONLY
+          name: YAWMI_ANDROID_AUTO_VERSION_UNSIGNED_RELEASE
           path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 7
 
@@ -200,7 +210,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gradle -p android --no-daemon :app:assembleRelease --stacktrace
+          gradle -p android --no-daemon :app:assembleRelease --stacktrace -PyawmiAutoCode="$YAWMI_CI_CODE" -PyawmiAutoName="$YAWMI_CI_NAME"
           APK='android/app/build/outputs/apk/release/app-release.apk'
           test -s "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
@@ -211,7 +221,7 @@ jobs:
         if: env.SIGNING_READY == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_V1_5_1_SIGNED_WITH_ORIGINAL_KEY
+          name: YAWMI_ANDROID_AUTO_VERSION_SIGNED_WITH_ORIGINAL_KEY
           path: |
             android/app/build/outputs/apk/release/app-release.apk
             ${{ runner.temp }}/android-public-files/assetlinks.json
@@ -225,19 +235,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="android-v1.5.1"
+          TAG="android-v${YAWMI_CI_NAME}"
+          FILE="YAWMI-LifeOS-v${YAWMI_CI_NAME}.apk"
           APK="android/app/build/outputs/apk/release/app-release.apk"
-          cp "$APK" "$RUNNER_TEMP/YAWMI-LifeOS-v1.5.1.apk"
+          cp "$APK" "$RUNNER_TEMP/$FILE"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release exists: refusing to overwrite an APK using a different signing key"
+            echo "Release already exists; refusing to overwrite a signed APK"
           else
             gh release create "$TAG" \
-              "$RUNNER_TEMP/YAWMI-LifeOS-v1.5.1.apk" \
+              "$RUNNER_TEMP/$FILE" \
               "$RUNNER_TEMP/android-public-files/assetlinks.json#assetlinks.json" \
               "$RUNNER_TEMP/android-public-files/apk-sha256.txt#apk-sha256.txt" \
               --repo "$GITHUB_REPOSITORY" \
-              --title "يومي LifeOS — Android APK v1.5.1 (مجاني)" \
+              --title "يومي LifeOS — Android APK v${YAWMI_CI_NAME} (مجاني)" \
               --notes-file android/RELEASE_NOTES.md \
               --latest
           fi
-          echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/YAWMI-LifeOS-v1.5.1.apk" >> "$GITHUB_STEP_SUMMARY"
+          echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/$FILE" >> "$GITHUB_STEP_SUMMARY"
