@@ -1,4 +1,4 @@
-name: YAWMI Android QA and Safe Signed Update
+name: YAWMI Android Widgets — Safe Signed Update
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: yawmi-android-v36
+  group: yawmi-android-release-verified
   cancel-in-progress: false
 
 jobs:
@@ -63,7 +63,7 @@ jobs:
       - name: Upload widget debug build for QA
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_V36_WIDGET_DEBUG_NOT_A_PUBLIC_UPDATE
+          name: YAWMI_ANDROID_V1_2_0_WIDGET_DEBUG_NOT_A_PUBLIC_UPDATE
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
@@ -131,7 +131,7 @@ jobs:
         if: env.SIGNING_READY == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: YAWMI_ANDROID_V1_1_0_SIGNED_WITH_ORIGINAL_KEY
+          name: YAWMI_ANDROID_V1_2_0_SIGNED_WITH_ORIGINAL_KEY
           path: |
             android/app/build/outputs/apk/release/app-release.apk
             ${{ runner.temp }}/android-public-files/assetlinks.json
@@ -145,19 +145,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="android-v1.1.0"
+          TAG="android-v1.2.0"
           APK="android/app/build/outputs/apk/release/app-release.apk"
-          cp "$APK" "$RUNNER_TEMP/YAWMI-LifeOS-v1.1.0.apk"
+          cp "$APK" "$RUNNER_TEMP/YAWMI-LifeOS-v1.2.0.apk"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release exists: refusing to overwrite an APK using a different signing key"
           else
             gh release create "$TAG" \
-              "$RUNNER_TEMP/YAWMI-LifeOS-v1.1.0.apk" \
+              "$RUNNER_TEMP/YAWMI-LifeOS-v1.2.0.apk" \
               "$RUNNER_TEMP/android-public-files/assetlinks.json#assetlinks.json" \
               "$RUNNER_TEMP/android-public-files/apk-sha256.txt#apk-sha256.txt" \
               --repo "$GITHUB_REPOSITORY" \
-              --title "يومي LifeOS — Android APK v1.1.0 (مجاني)" \
+              --title "يومي LifeOS — Android APK v1.2.0 (مجاني)" \
               --notes-file android/RELEASE_NOTES.md \
               --latest
           fi
-          echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/YAWMI-LifeOS-v1.1.0.apk" >> "$GITHUB_STEP_SUMMARY"
+          echo "Public download: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/YAWMI-LifeOS-v1.2.0.apk" >> "$GITHUB_STEP_SUMMARY"
