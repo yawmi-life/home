@@ -8,6 +8,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -58,12 +61,15 @@ public final class YawmiMainActivity extends Activity {
     private ValueCallback<Uri[]> files;
     private PermissionRequest audioRequest;
     private boolean closing;
+    private boolean forceBundledFallback;
+    private YawmiUpdateManager updates;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().setStatusBarColor(VIOLET);
         getWindow().setNavigationBarColor(VIOLET);
         createShell();
+        updates = new YawmiUpdateManager(this);
         try {
             configureWebView();
             navigateFromIntent(getIntent());
@@ -104,6 +110,12 @@ public final class YawmiMainActivity extends Activity {
         TextView title = text("✦ يومي LifeOS", Color.WHITE, 15);
         title.setTypeface(null, 1);
         header.addView(title, new LinearLayout.LayoutParams(0, dp(39), 1f));
+        Button update = button("التحديثات");
+        update.setContentDescription("فحص تحديثات يومي الرسمية");
+        header.addView(update, new LinearLayout.LayoutParams(dp(88), dp(39)));
+        update.setOnClickListener(v -> {
+            if (updates != null) updates.check(true);
+        });
         Button browser = button("المتصفح");
         browser.setContentDescription("فتح يومي في متصفح الهاتف");
         header.addView(browser, new LinearLayout.LayoutParams(dp(86), dp(39)));
@@ -155,7 +167,11 @@ public final class YawmiMainActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
                 WebResourceResponse bundled = bundledAuthSdk(req.getUrl(), req.getMethod());
-                return bundled != null ? bundled : localAsset(req.getUrl(), req.getMethod());
+                if (bundled != null) return bundled;
+                // Online: the verified HTTPS origin serves the latest app code.
+                // Offline or unavailable host: load the complete packaged app.
+                return !forceBundledFallback && validatedInternet()
+                    ? null : localAsset(req.getUrl(), req.getMethod());
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return route(request.getUrl());
@@ -165,8 +181,25 @@ public final class YawmiMainActivity extends Activity {
                 if (status != null && status.getVisibility() == View.VISIBLE) status.setVisibility(View.GONE);
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) {
-                    showError("تعذر فتح الصفحة المطلوبة. ملفات يومي الأساسية محفوظة داخل التطبيق؛ اضغط إعادة المحاولة.");
+                Uri failed = request.getUrl();
+                if (failed != null && "https".equalsIgnoreCase(failed.getScheme()) &&
+                    HOST.equalsIgnoreCase(failed.getHost()) &&
+                    failed.getPath() != null && failed.getPath().startsWith("/home/") &&
+                    !forceBundledFallback) {
+                    // A broken site connection should never make the installed app unusable.
+                    forceBundledFallback = true;
+                    view.post(() -> {
+                        if (web != null) web.reload();
+                    });
+                } else if (request.isForMainFrame()) {
+                    showError("تعذر فتح يومي. اضغط إعادة المحاولة أو افتح النسخة بالمتصفح.");
+                }
+            }
+            @Override public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {
+                if (request.isForMainFrame() && response != null &&
+                    response.getStatusCode() >= 500 && !forceBundledFallback) {
+                    forceBundledFallback = true;
+                    view.post(() -> { if (web != null) web.reload(); });
                 }
             }
             @Override public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
@@ -215,6 +248,20 @@ public final class YawmiMainActivity extends Activity {
                 Toast.makeText(this, "لتنزيل النسخ الاحتياطية افتح يومي من زر «المتصفح».", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private boolean validatedInternet() {
+        try {
+            ConnectivityManager cm =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return false;
+            Network network = cm.getActiveNetwork();
+            NetworkCapabilities c = network == null ? null : cm.getNetworkCapabilities(network);
+            return c != null && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private WebResourceResponse bundledAuthSdk(Uri uri, String method) {
@@ -296,6 +343,7 @@ public final class YawmiMainActivity extends Activity {
             uri.getPath() != null && uri.getPath().startsWith("/home/")) {
             url = uri.toString();
         }
+        forceBundledFallback = !validatedInternet();
         web.loadUrl(url);
     }
 
@@ -354,7 +402,10 @@ public final class YawmiMainActivity extends Activity {
             } catch (Exception exception) {
                 showError("تعذر بدء محرك العرض. جرّب فتح يومي بالمتصفح.");
             }
-        } else web.reload();
+        } else {
+            forceBundledFallback = !validatedInternet();
+            web.reload();
+        }
     }
 
     private void showError(String text) {
@@ -399,8 +450,13 @@ public final class YawmiMainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         if (web != null) web.onResume();
+        if (updates != null) updates.onResume();
     }
     @Override protected void onDestroy() {
+        if (updates != null) {
+            updates.stop();
+            updates = null;
+        }
         if (files != null) { files.onReceiveValue(null); files = null; }
         if (audioRequest != null) { audioRequest.deny(); audioRequest = null; }
         if (web != null) {
