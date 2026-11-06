@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
@@ -132,5 +133,8 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/yawmi_update_file_paths" />
         </provider>
+        <receiver
+            android:name=".YawmiUpdateInstallResultReceiver"
+            android:exported="false" />
     </application>
 </manifest>
