@@ -99,7 +99,8 @@ final class YawmiUpdateManager {
                     throw new IllegalStateException("غير متاح إصدار مستقر");
                 String tag = release.optString("tag_name", "");
                 int[] newer = parseVersion(tag);
-                int[] installed = parseVersion("android-v" + BuildConfig.VERSION_NAME);
+                String installedVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;
+                int[] installed = parseVersion("android-v" + installedVersion);
                 if (newer == null || installed == null)
                     throw new IllegalStateException("صيغة الإصدار غير صالحة");
                 state().edit().putLong(KEY_LAST_CHECK, System.currentTimeMillis()).apply();
