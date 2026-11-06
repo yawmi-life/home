@@ -19,7 +19,7 @@ public final class YawmiShortcutWidget extends AppWidgetProvider {
     private static final String ROOT = "https://yawmi-life.github.io/home/";
 
     private static PendingIntent open(Context context, String target, int code) {
-        Intent intent = new Intent(context, com.google.androidbrowserhelper.trusted.LauncherActivity.class);
+        Intent intent = new Intent(context, YawmiMainActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
         intent.setData(Uri.parse(ROOT + "index.html?source=widget&quick=" + target));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
