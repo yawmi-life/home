@@ -1,0 +1,58 @@
+name: YAWMI Android Widgets APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/yawmi-widgets-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Build APK (debug / validation)
+        run: gradle -p android --no-daemon :app:assembleDebug
+      - name: Upload Android widgets validation APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: yawmi-widgets-v1.2.0-debug-test-only
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+      - name: Decode original release signing key
+        if: ${{ env.HAS_SIGNING_KEY == 'yes' }}
+        env:
+          KEYSTORE_B64: ${{ secrets.YAWMI_KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_B64" | base64 -d > android/yawmi-release.jks
+      - name: Build upgrade-compatible signed APK
+        if: ${{ env.HAS_SIGNING_KEY == 'yes' }}
+        env:
+          YAWMI_KEYSTORE_PATH: '../yawmi-release.jks'
+          YAWMI_KEYSTORE_PASSWORD: ${{ secrets.YAWMI_KEYSTORE_PASSWORD }}
+          YAWMI_KEY_PASSWORD: ${{ secrets.YAWMI_KEY_PASSWORD }}
+        run: gradle -p android --no-daemon :app:assembleRelease
+      - name: Upload signed release APK
+        if: ${{ env.HAS_SIGNING_KEY == 'yes' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: yawmi-widgets-v1.2.0-signed
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+    env:
+      HAS_SIGNING_KEY: ${{ secrets.YAWMI_KEYSTORE_BASE64 != '' && secrets.YAWMI_KEYSTORE_PASSWORD != '' && secrets.YAWMI_KEY_PASSWORD != '' && 'yes' || 'no' }}
