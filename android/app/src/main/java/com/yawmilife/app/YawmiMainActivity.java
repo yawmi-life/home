@@ -70,6 +70,7 @@ public final class YawmiMainActivity extends Activity {
         getWindow().setNavigationBarColor(VIOLET);
         createShell();
         updates = new YawmiUpdateManager(this);
+        YawmiUpdateWorker.schedule(this);
         try {
             configureWebView();
             navigateFromIntent(getIntent());
