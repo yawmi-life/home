@@ -25,8 +25,8 @@ test('All publicly served entry screens load the live update script', () => {
 
 test('Service worker precaches the update checker and safely activates new shell', () => {
   const sw = read('sw.js');
-  assert.match(sw, /yawmi-v40-native-launcher-only/);
-  for (const name of ['site-version.json','yawmi-live-update-v1.js','yawmi-widgets-v1.js','yawmi-native-widgets-v1.js']) {
+  assert.match(sw, /yawmi-v41-launcher-widgets-no-internal-studio/);
+  for (const name of ['site-version.json','yawmi-live-update-v1.js','yawmi-native-widgets-v1.js']) {
     assert.ok(sw.includes("'"+name+"'"),name);
   }
   assert.match(sw, /self\.skipWaiting\(\)/);
