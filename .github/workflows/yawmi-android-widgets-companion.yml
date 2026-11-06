@@ -1,0 +1,86 @@
+name: YAWMI Widgets Companion APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/yawmi-android-widgets-companion.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: yawmi-widgets-companion-v1-2-0
+  cancel-in-progress: false
+
+jobs:
+  companion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout YAWMI
+        uses: actions/checkout@v4
+      - name: Configure Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: 'false'
+      - name: Android platforms
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-36" "build-tools;35.0.0"
+      - name: Prepare app icon
+        shell: bash
+        run: |
+          mkdir -p android/app/src/main/res/drawable-nodpi
+          cp icon-512.png android/app/src/main/res/drawable-nodpi/yawmi_icon.png
+      - name: Compile separate Android launcher widgets APK
+        shell: bash
+        run: gradle -p android -PyawmiWidgetCompanion=true --no-daemon :app:assembleDebug --stacktrace
+      - name: Verify package, signature, widgets and Android installability
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/widget-badging.txt
+          grep -F "package: name='com.yawmilife.app.widgets'" /tmp/widget-badging.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > /tmp/widget-manifest.txt
+          grep -F 'YawmiCategoryWidget' /tmp/widget-manifest.txt
+          sha256sum "$APK" | tee /tmp/widget-sha256.txt
+      - name: Prepare optional standalone companion download
+        shell: bash
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk /tmp/YAWMI-Widgets-v1.2.0-companion.apk
+      - name: Preserve test artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YAWMI_WIDGETS_COMPANION_V1_2_0
+          path: /tmp/YAWMI-Widgets-v1.2.0-companion.apk
+          retention-days: 90
+      - name: Publish companion beta beside existing YAWMI app
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="android-widgets-v1.2.0-beta"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Existing release preserved; not overwriting a differently signed binary."
+          else
+            gh release create "$TAG"               /tmp/YAWMI-Widgets-v1.2.0-companion.apk               /tmp/widget-sha256.txt#sha256.txt               --repo "$GITHUB_REPOSITORY"               --title "يومي ويدجتس للشاشة الرئيسية — Android v1.2.0 Beta"               --notes-file android/WIDGETS_COMPANION_NOTES.md               --prerelease
+          fi
+          echo "Companion APK: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/YAWMI-Widgets-v1.2.0-companion.apk" >> "$GITHUB_STEP_SUMMARY"
