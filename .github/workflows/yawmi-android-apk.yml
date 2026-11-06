@@ -68,6 +68,14 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
+      - name: Preserve official Android apksigner tool for independent verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: YAWMI_OFFICIAL_ANDROID_APKSIGNER_35
+          path: ${{ env.ANDROID_HOME }}/build-tools/35.0.0/lib/apksigner.jar
+          if-no-files-found: error
+          retention-days: 2
+
       - name: Restore ORIGINAL Android signing identity (never generate a replacement key)
         shell: bash
         env:
