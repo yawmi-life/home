@@ -124,13 +124,6 @@ public final class YawmiMainActivity extends Activity {
 
         LinearLayout actions = new LinearLayout(this);
         actions.setGravity(Gravity.CENTER_VERTICAL);
-        Button update = button("التحديثات");
-        update.setContentDescription("فحص تحديثات يومي الرسمية");
-        actions.addView(update, new LinearLayout.LayoutParams(0, dp(41), 1.0f));
-        update.setOnClickListener(v -> {
-            if (updates != null) updates.check(true);
-        });
-
         Button browser = button("ويب");
         browser.setContentDescription("فتح يومي من المتصفح");
         actions.addView(browser, new LinearLayout.LayoutParams(dp(54), dp(41)));
