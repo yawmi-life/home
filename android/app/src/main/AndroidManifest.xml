@@ -115,5 +115,16 @@
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/yawmi_category_widget_info" />
         </receiver>
+        <activity android:name=".YawmiWidgetLinkActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="yawmiwidget" android:host="link" />
+                <data android:scheme="yawmiwidget" android:host="unlink" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>
