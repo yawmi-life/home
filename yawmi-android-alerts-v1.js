@@ -3,7 +3,7 @@
    Device alerts work offline after scheduling, but are inexact and not FCM push. */
 (()=>{'use strict';
 const installed=/YawmiAndroid\/\d+/.test(navigator.userAgent||'');
-let enabled=false,owner='',lastPayload='',lastSync=0;
+let enabled=false,owner='',lastPayload='',lastSync=0,scheduled=0,nextAt=0;
 const cloud=()=>window.YawmiCloud,api=()=>window.YawmiExtraAPI;
 const authorized=()=>!!(cloud()?.ready&&cloud()?.currentUser?.id&&!cloud()?.conflict&&api()?.getState);
 function command(name,payload){
@@ -13,11 +13,17 @@ function command(name,payload){
  location.href=uri;
  return true;
 }
-function nativeState(isEnabled,hasPermission){
+function nativeState(isEnabled,hasPermission,count=0,upcoming=0){
+ const previouslyEnabled=enabled;
  enabled=!!isEnabled&&!!hasPermission;
+ scheduled=Math.max(0,Number(count)||0);
+ nextAt=Math.max(0,Number(upcoming)||0);
  window.YawmiPush?.renderControls?.();
- if(enabled)sync(true);
+ if(document.querySelector('#page-reminders.on'))window.YawmiLife?.render?.('reminders');
+ // Never re-send an identical calendar to the native bridge in a status loop.
+ if(enabled&&!previouslyEnabled)sync(true);
 }
+function scheduleInfo(){return {count:scheduled,nextAt}}
 function enable(){
  if(!installed||!authorized())return false;
  command('enable');
@@ -61,12 +67,19 @@ function events(){
   const lead=Number(item.lead)||0;
   if([0,10,60,1440].includes(lead))add('rem',item,lead);
  }
- for(const item of (Array.isArray(data.tasks)?data.tasks:[]).slice(0,200)){
-  if(!item.time)continue;
-  const date=item.date,completed=!!(data.daily?.[date]?.tasks?.[item.id]);
-  if(!completed&&item.repeat==='once')add('task',item,0);
-  // Repeating tasks are deliberately left to the existing web calendar
-  // until their instance schedule can be reconstructed without false alerts.
+ // Follow the existing YAWMI recurrence engine: include scheduled daily/weekly
+ // instances for the next week, without inventing recurring dates ourselves.
+ for(let offset=0;offset<7;offset++){
+  const day=new Date();
+  day.setHours(12,0,0,0);
+  day.setDate(day.getDate()+offset);
+  const date=[day.getFullYear(),String(day.getMonth()+1).padStart(2,'0'),
+   String(day.getDate()).padStart(2,'0')].join('-');
+  const tasks=api()?.getSummary?.(date)?.tasks||[];
+  for(const item of tasks.slice(0,90)){
+   if(!item.time||data.daily?.[date]?.tasks?.[item.id])continue;
+   add('task',{...item,date},0);
+  }
  }
  return out.sort((a,b)=>a.at-b.at).slice(0,48);
 }
@@ -86,15 +99,30 @@ function sync(force=false){
  lastPayload=payload;lastSync=Date.now();
  return command('sync',payload);
 }
+let wrapped=null;
+function hookSave(){
+ const a=api();
+ if(!installed||!a||a===wrapped||typeof a.save!=='function')return;
+ const previous=a.save;
+ a.save=function(...args){
+  const outcome=previous.apply(this,args);
+  // Schedule immediately after saving a reminder rather than relying on a
+  // 45-second polling window that users might close before it fires.
+  if(outcome!==false)setTimeout(()=>sync(true),300);
+  return outcome;
+ };
+ wrapped=a;
+}
 function boot(){
  if(!installed)return;
  command('status');
- setInterval(()=>sync(false),45000);
+ hookSave();
+ setInterval(()=>{hookSave();sync(false)},5000);
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync()});
  window.addEventListener('online',()=>sync());
  window.addEventListener('pageshow',()=>sync());
 }
-window.YawmiAndroidAlerts={available:()=>installed,enabled:()=>enabled,enable,disable,test,sync,nativeState};
+window.YawmiAndroidAlerts={available:()=>installed,enabled:()=>enabled,enable,disable,test,sync,nativeState,scheduleInfo};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
 else boot();
 })();
