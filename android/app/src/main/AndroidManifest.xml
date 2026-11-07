@@ -115,6 +115,30 @@
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/yawmi_category_widget_info" />
         </receiver>
+        <receiver android:name="com.yawmilife.app.YawmiCategoryWidget$Tasks"
+            android:exported="true" android:label="@string/yawmi_widget_tasks">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
+        <receiver android:name="com.yawmilife.app.YawmiCategoryWidget$Habits"
+            android:exported="true" android:label="@string/yawmi_widget_habits">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
+        <receiver android:name="com.yawmilife.app.YawmiCategoryWidget$Finance"
+            android:exported="true" android:label="@string/yawmi_widget_finance">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
+        <receiver android:name="com.yawmilife.app.YawmiCategoryWidget$Reports"
+            android:exported="true" android:label="@string/yawmi_widget_reports">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/yawmi_category_widget_info" />
+        </receiver>
         <activity android:name=".YawmiWidgetLinkActivity"
             android:exported="true"
             android:theme="@android:style/Theme.Material.Light.NoActionBar">

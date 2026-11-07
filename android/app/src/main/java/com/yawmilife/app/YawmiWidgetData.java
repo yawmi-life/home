@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 import org.json.JSONObject;
+import org.json.JSONArray;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,6 +28,8 @@ final class YawmiWidgetData {
     private static final String API = "https://afvezxyipdytcuatragm.supabase.co/functions/v1/yawmi-widget-read";
     private static final String TOKEN = "device_token";
     private static final String SNAPSHOT = "public_counts";
+    private static final String LOCAL = "private_launcher_snapshot_v3";
+    private static final String OWNER = "private_launcher_owner_hash_v3";
     static final String ACTION_REFRESH = "com.yawmilife.app.WIDGET_REFRESH";
     private static final ExecutorService POOL = Executors.newSingleThreadExecutor();
     private static final AtomicLong LAST_ATTEMPT = new AtomicLong(0);
@@ -47,11 +50,68 @@ final class YawmiWidgetData {
         LAST_ATTEMPT.set(0);
         repaintAll(c);
     }
-    static boolean linked(Context c){return isToken(preferences(c).getString(TOKEN,""));}
+    static boolean linked(Context c){return isToken(preferences(c).getString(TOKEN,"")) ||
+        !preferences(c).getString(LOCAL,"").isEmpty();}
+    static String launcherNonce(Context c){
+        SharedPreferences pref=preferences(c);
+        String old=pref.getString("launcher_action_nonce_v1","");
+        if(old.matches("[a-f0-9]{48}"))return old;
+        byte[] bytes=new byte[24];
+        new java.security.SecureRandom().nextBytes(bytes);
+        StringBuilder result=new StringBuilder(48);
+        for(byte value:bytes)result.append(String.format(java.util.Locale.US,"%02x",value & 0xff));
+        String nonce=result.toString();
+        pref.edit().putString("launcher_action_nonce_v1",nonce).apply();
+        return nonce;
+    }
     static boolean isToken(String value){return value!=null&&value.matches("^[a-f0-9]{64}$");}
     static JSONObject snapshot(Context c) {
-        try {return new JSONObject(preferences(c).getString(SNAPSHOT,"{}"));}
+        try {
+            JSONObject local=new JSONObject(preferences(c).getString(LOCAL,"{}"));
+            if(local.optString("day","").matches("\\d{4}-\\d{2}-\\d{2}"))return local;
+        }catch(Exception ignored){}
+        try{return new JSONObject(preferences(c).getString(SNAPSHOT,"{}"));}
         catch(Exception ignored){return new JSONObject();}
+    }
+
+    /** Private, bounded device-only launcher snapshot. No auth token, JWT or
+     * financial transaction descriptions are accepted from the web application. */
+    static void acceptLocal(Context c,String raw){
+        if(raw==null||raw.length()>10000)return;
+        try{
+            JSONObject incoming=new JSONObject(raw);
+            String owner=incoming.optString("owner","");
+            String day=incoming.optString("day","");
+            if(!owner.matches("[a-f0-9]{64}")||!day.matches("\\d{4}-\\d{2}-\\d{2}"))return;
+            JSONObject clean=new JSONObject().put("day",day);
+            String[] numbers={"progress","tasksDone","tasksTotal","habitsDone","habitsTotal",
+                "xp","level","streak","goalsDone","goalsTotal","booksCount",
+                "waterMl","waterGoalMl","readingPages","moneyHidden","moneyIncome","moneyExpense"};
+            for(String field:numbers)clean.put(field,integer(incoming,field,100000000));
+            String currency=incoming.optString("moneyCurrency","SAR");
+            clean.put("moneyCurrency",currency.matches("[A-Z]{3}")?currency:"SAR");
+            for(String field:new String[]{"todayTasks","todayHabits"}){
+                JSONArray input=incoming.optJSONArray(field),items=new JSONArray();
+                for(int i=0;input!=null&&i<Math.min(4,input.length());i++){
+                    JSONObject row=input.optJSONObject(i);
+                    if(row==null)continue;
+                    String id=row.optString("id","");
+                    if(!id.matches("[A-Za-z0-9_-]{1,64}"))continue;
+                    String title=row.optString("title","").replaceAll("[\\p{Cntrl}]"," ").trim();
+                    if(title.length()>38)title=title.substring(0,37)+"…";
+                    if(!title.isEmpty())items.put(new JSONObject().put("id",id).put("title",title));
+                }
+                clean.put(field,items);
+            }
+            SharedPreferences pref=preferences(c);
+            SharedPreferences.Editor edit=pref.edit();
+            if(!owner.equals(pref.getString(OWNER,""))){
+                // Never render an old account's private title after a new sign-in.
+                edit.remove(SNAPSHOT).remove(TOKEN);
+            }
+            edit.putString(OWNER,owner).putString(LOCAL,clean.toString()).apply();
+            repaintAll(c);
+        }catch(Exception ignored){}
     }
     static int integer(JSONObject value,String name,int upper) {
         return Math.min(upper,Math.max(0,value.optInt(name,0)));
@@ -62,7 +122,9 @@ final class YawmiWidgetData {
         YawmiCategoryWidget[] providers={
             new YawmiCategoryWidget.Today(),new YawmiCategoryWidget.Productivity(),
             new YawmiCategoryWidget.Planning(),new YawmiCategoryWidget.Learning(),
-            new YawmiCategoryWidget.Wellbeing(),new YawmiCategoryWidget.Life()
+            new YawmiCategoryWidget.Wellbeing(),new YawmiCategoryWidget.Life(),
+            new YawmiCategoryWidget.Tasks(),new YawmiCategoryWidget.Habits(),
+            new YawmiCategoryWidget.Finance(),new YawmiCategoryWidget.Reports()
         };
         for(YawmiCategoryWidget provider:providers){
             ComponentName component=new ComponentName(c,provider.getClass());

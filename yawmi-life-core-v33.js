@@ -211,8 +211,21 @@ function saveReminder(){
  const v={id:editing||id(),date,title,time,lead:Number($('ylRemLead').value)||0,repeat:$('ylRemRepeat').value,done:false,updatedAt:new Date().toISOString()};
  const old=s.lifeReminders.find(x=>x.id===editing);if(old)Object.assign(old,v);else s.lifeReminders.push(v);
  if(!save())return error('تعذر حفظ التذكير');done();
+ if(window.YawmiAndroidAlerts?.available?.()){
+  if(window.YawmiAndroidAlerts.enabled())window.YawmiAndroidAlerts.sync(true);
+  else try{
+   if(localStorage.getItem('yawmi_native_reminder_permission_asked')!=='1'){
+    localStorage.setItem('yawmi_native_reminder_permission_asked','1');
+    window.YawmiAndroidAlerts.enable();
+   }
+  }catch(_){}
+ }
 }
 async function enableNotifications(){
+ if(window.YawmiAndroidAlerts?.available?.()){
+  window.YawmiAndroidAlerts.enable();
+  return;
+ }
  if(!('Notification' in window)||!window.isSecureContext){api()?.notify?.('إشعارات الجهاز غير متاحة في المتصفح ده. التذكيرات داخل التطبيق ستظل موجودة.');return}
  let perm=Notification.permission;try{if(perm==='default')perm=await Notification.requestPermission()}catch(_){}
  const s=state();if(!s)return;
@@ -226,7 +239,7 @@ async function showNativeNotification(key){
  try{new Notification(title,options);return true}catch(_){return false}
 }
 async function checkNotifications(){
- const s=state();if(window.YawmiPush?.active?.())return;
+ const s=state();if(window.YawmiAndroidAlerts?.available?.()||window.YawmiPush?.active?.())return;
  if(!s||!s.lifeNotificationPrefs.enabled||!('Notification' in window)||Notification.permission!=='granted'||document.hidden||notifyBusy||!canWrite())return;
  notifyBusy=true;
  try{
@@ -242,12 +255,19 @@ function reminders(){
  const el=root('reminders');if(!el)return;const s=state(),now=Date.now();
  const all=potentialNotifications().filter(x=>x.due>=now-86400000).slice(0,40);
  const stored=s.lifeReminders.slice().sort((a,b)=>b.date.localeCompare(a.date));
- const permission=('Notification' in window)?Notification.permission:'unsupported';
+ const isNative=window.YawmiAndroidAlerts?.available?.()===true;
+ const diag=window.YawmiAndroidAlerts?.scheduleInfo?.()||{count:0,nextAt:0};
+ const permission=isNative?(window.YawmiAndroidAlerts.enabled()?'granted':'default'):
+  (('Notification' in window)?Notification.permission:'unsupported');
  el.innerHTML='<div class="yl-hero"><div><span>REMINDERS · مركز التذكيرات</span><h2>افتكر المهم من غير توتر</h2><p>مواعيدك، مناسباتك والالتزامات الشهرية مع تذكيرات مخصصة.</p></div>'+
  btn('＋ تذكير','data-life-rem-new','primary')+'</div>'+
- '<div class="yl-surface yl-callout"><b>إشعارات المتصفح: '+(permission==='granted'?'مسموح بها':permission==='denied'?'مرفوضة':'غير مفعّلة')+'</b>'+
- '<p>الإشعارات المجانية هنا تعمل أثناء فتح التطبيق فقط؛ لا نضمن وصولها بعد إغلاق المتصفح أو إيقاف الجهاز. راجع التذكيرات داخل يومي دائمًا.</p>'+
- btn('تفعيل إذن الإشعارات','data-life-ask-notify','primary')+'</div>'+
+ '<div class="yl-surface yl-callout"><b>'+(isNative?'إشعارات أندرويد الأصلية: ':'إشعارات المتصفح: ')+(permission==='granted'?'مفعّلة':permission==='denied'?'مرفوضة':'غير مفعّلة')+'</b>'+
+ '<p>'+(isNative?'تنبيهات الهاتف المجدولة: '+diag.count+
+  (diag.nextAt?' · القادم '+new Date(diag.nextAt).toLocaleString('ar-SA'):'')+
+  '. قد يؤخر أندرويد توقيتها وفق إعدادات البطارية.':
+  'إشعارات المتصفح قد تتوقف بعد إغلاقه؛ يمكنك تفعيل إشعارات الخلفية من التقويم.')+'</p>'+
+ btn('تفعيل إشعارات الهاتف','data-life-ask-notify','primary')+
+ (isNative?btn('🧪 إرسال إشعار اختبار','data-life-notify-test','soft'):'')+'</div>'+
  '<div class="yl-twocol"><section class="yl-surface"><h3>التنبيهات القادمة</h3>'+
  (all.length?all.map(x=>'<div class="yl-record"><div><b>🔔 '+esc(x.label)+'</b><small>'+esc(x.origin)+' · '+new Date(x.due).toLocaleString('ar-EG-u-ca-gregory')+'</small></div></div>').join(''):empty('مافيش تذكيرات قريبة','أضف تذكيرًا أو موعدًا من التقويم.'))+'</section>'+
  '<section class="yl-surface"><div class="yl-toolbar"><h3>التذكيرات المحفوظة</h3>'+btn('＋ جديد','data-life-rem-new')+'</div>'+
@@ -320,6 +340,7 @@ function handleClick(e){
  if(b.dataset.lifeEventEdit)return eventForm(b.dataset.lifeEventEdit);
  if(b.dataset.lifeEventDelete)return deleteItem('lifeCalendar',b.dataset.lifeEventDelete,'الموعد');
  if(b.hasAttribute('data-life-rem-new'))return reminderForm(null);
+ if(b.hasAttribute('data-life-notify-test'))return window.YawmiAndroidAlerts?.test?.();
  if(b.dataset.lifeOpenReminder)return reminderForm(b.dataset.lifeOpenReminder);
  if(b.dataset.lifeRemDelete)return deleteItem('lifeReminders',b.dataset.lifeRemDelete,'التذكير');
  if(b.hasAttribute('data-life-ask-notify'))return window.YawmiPush?.enable?.()||enableNotifications();

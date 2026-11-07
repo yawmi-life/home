@@ -74,3 +74,25 @@ html,body{max-width:100%;overflow-x:clip}
 .date-controls{gap:4px;grid-template-columns:32px minmax(0,1fr) 32px 54px}
 .date-controls .icon-btn{width:32px}
 }
+/* Mobile chrome v14 — sticky header and Android system-nav safe spacing. */
+@media screen and (max-width:960px){
+ .app-content{overflow:visible!important;padding-top:0!important;
+   padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))!important}
+ .topbar{position:sticky!important;top:0!important;z-index:48!important;
+   margin:0 0 12px!important;padding:9px 6px 10px!important;
+   background:var(--bg,#f8f7ff);border-bottom:1px solid var(--border,#ddd9ed);
+   box-shadow:0 5px 16px rgba(30,25,56,.07);
+   -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+ .top-actions{gap:6px}
+ .bottom-nav{bottom:calc(3px + env(safe-area-inset-bottom,0px))!important;
+   padding:5px!important;gap:3px!important;border-radius:15px!important}
+ .bottom-nav button{min-height:42px!important;padding:5px 1px!important;
+   line-height:1.2!important;touch-action:manipulation}
+ .bottom-nav button span{font-size:18px!important;margin-bottom:1px!important}
+}
+@media screen and (max-width:480px){
+ .topbar{gap:6px!important;padding:7px 4px 8px!important}
+ .top-actions{gap:4px!important}
+ .bottom-nav{left:5px!important;right:5px!important}
+ .bottom-nav button{min-height:44px!important;font-size:9px!important}
+}

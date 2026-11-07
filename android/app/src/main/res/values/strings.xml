@@ -10,4 +10,8 @@
     <string name="yawmi_widget_learning">يومي · القراءة والقرآن</string>
     <string name="yawmi_widget_wellbeing">يومي · صحتي وروتيني</string>
     <string name="yawmi_widget_life">يومي · شؤون حياتي</string>
+    <string name="yawmi_widget_tasks">يومي · مهام اليوم التفاعلية</string>
+    <string name="yawmi_widget_habits">يومي · عادات اليوم التفاعلية</string>
+    <string name="yawmi_widget_finance">يومي · الدخل والمصروف</string>
+    <string name="yawmi_widget_reports">يومي · التقارير والتقدم</string>
 </resources>
