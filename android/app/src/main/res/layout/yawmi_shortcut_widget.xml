@@ -1,69 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/yawmi_widget_background"
-    android:padding="12dp"
-    android:layoutDirection="rtl"
-    android:orientation="vertical">
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="✦ يومي LifeOS"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:gravity="center_vertical|right" />
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="اختصارات خاصة بك · لا تعرض بيانات شخصية"
-        android:textSize="10sp"
-        android:textColor="#D8D0F6"
-        android:paddingBottom="7dp"
-        android:gravity="right" />
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layoutDirection="rtl">
-        <TextView
-            android:id="@+id/yawmi_widget_tasks"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="43dp"
-            android:gravity="center"
-            android:background="@drawable/yawmi_widget_button"
-            android:layout_marginEnd="5dp"
-            android:text="☑ مهامي"
-            android:textStyle="bold"
-            android:textSize="13sp"
-            android:clickable="true"
-            android:textColor="#FFFFFF"/>
-        <TextView
-            android:id="@+id/yawmi_widget_habits"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="43dp"
-            android:gravity="center"
-            android:background="@drawable/yawmi_widget_button"
-            android:layout_marginEnd="5dp"
-            android:text="🌱 عاداتي"
-            android:textStyle="bold"
-            android:textSize="13sp"
-            android:clickable="true"
-            android:textColor="#FFFFFF"/>
-        <TextView
-            android:id="@+id/yawmi_widget_calendar"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="43dp"
-            android:gravity="center"
-            android:background="@drawable/yawmi_widget_button"
-            android:text="🗓 تقويمي"
-            android:textStyle="bold"
-            android:textSize="13sp"
-            android:clickable="true"
-            android:textColor="#FFFFFF"/>
-    </LinearLayout>
+ android:layout_width="match_parent" android:layout_height="match_parent"
+ android:background="@drawable/yawmi_widget_background" android:padding="12dp"
+ android:layoutDirection="rtl" android:orientation="vertical">
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+  android:text="✦ يومي • إضافة سريعة" android:textSize="17sp" android:textStyle="bold"
+  android:textColor="#FFFFFF" android:gravity="right"/>
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+  android:text="مهمة · عادة · دخل · مصروف · تقرير" android:textSize="10sp"
+  android:textColor="#D8D0F6" android:paddingBottom="6dp" android:gravity="right"/>
+ <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+  android:layout_weight="1" android:orientation="horizontal" android:layoutDirection="rtl">
+  <TextView android:id="@+id/yawmi_widget_tasks" style="@style/YawmiWidgetShortcut" android:text="＋ مهمة"/>
+  <TextView android:id="@+id/yawmi_widget_habits" style="@style/YawmiWidgetShortcut" android:text="＋ عادة"/>
+  <TextView android:id="@+id/yawmi_widget_calendar" style="@style/YawmiWidgetShortcut" android:text="🗓 تقويم"/>
+ </LinearLayout>
+ <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+  android:layout_weight="1" android:orientation="horizontal" android:layoutDirection="rtl"
+  android:layout_marginTop="6dp">
+  <TextView android:id="@+id/yawmi_widget_expense" style="@style/YawmiWidgetShortcut" android:text="− مصروف"/>
+  <TextView android:id="@+id/yawmi_widget_income" style="@style/YawmiWidgetShortcut" android:text="＋ دخل"/>
+  <TextView android:id="@+id/yawmi_widget_report" style="@style/YawmiWidgetShortcut" android:text="▥ تقرير"/>
+ </LinearLayout>
 </LinearLayout>
