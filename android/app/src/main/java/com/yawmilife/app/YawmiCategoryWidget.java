@@ -34,7 +34,7 @@ public abstract class YawmiCategoryWidget extends AppWidgetProvider {
     }
     protected static String itemLink(JSONObject s,String key,int index,String page,String action){
         JSONObject value=item(s,key,index);
-        if(value==null)return page;
+        if(value==null)return page+"|add-"+(page.equals("tasks")?"task":"habit");
         String id=value.optString("id","");
         return id.matches("[A-Za-z0-9_-]{1,64}")?page+"|"+action+"|"+id:page;
     }
