@@ -52,6 +52,18 @@ final class YawmiWidgetData {
     }
     static boolean linked(Context c){return isToken(preferences(c).getString(TOKEN,"")) ||
         !preferences(c).getString(LOCAL,"").isEmpty();}
+    static String launcherNonce(Context c){
+        SharedPreferences pref=preferences(c);
+        String old=pref.getString("launcher_action_nonce_v1","");
+        if(old.matches("[a-f0-9]{48}"))return old;
+        byte[] bytes=new byte[24];
+        new java.security.SecureRandom().nextBytes(bytes);
+        StringBuilder result=new StringBuilder(48);
+        for(byte value:bytes)result.append(String.format(java.util.Locale.US,"%02x",value & 0xff));
+        String nonce=result.toString();
+        pref.edit().putString("launcher_action_nonce_v1",nonce).apply();
+        return nonce;
+    }
     static boolean isToken(String value){return value!=null&&value.matches("^[a-f0-9]{64}$");}
     static JSONObject snapshot(Context c) {
         try {
