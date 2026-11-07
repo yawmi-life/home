@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "tag": "android-v1.5.127",
+  "apk_url": "https://github.com/yawmi-life/home/releases/download/android-v1.5.127/YAWMI-LifeOS-v1.5.127.apk",
+  "sha256": "060ebcb77a0081636d46b77f7188ef3f55e9cb0b15fe8071a6bf36f44d3c7028",
+  "size": 4872552,
+  "released_at": "2026-11-07T17:32:28.305019+00:00",
+  "package": "com.yawmilife.app"
+}
