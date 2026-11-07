@@ -66,6 +66,7 @@ public final class YawmiMainActivity extends Activity {
     private boolean closing;
     private boolean forceBundledFallback;
     private YawmiUpdateManager updates;
+    private boolean testNotificationAfterPermission;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -328,6 +329,8 @@ public final class YawmiMainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, ASK_NOTIFICATIONS);
         } else {
             YawmiReminderScheduler.enable(this);
+            if(testNotificationAfterPermission)YawmiReminderReceiver.send(this,42002);
+            testNotificationAfterPermission=false;
             sendNotificationState();
             Toast.makeText(this, "تم تفعيل تذكيرات أندرويد. ستُزامن المواعيد القادمة عند فتح يومي.", Toast.LENGTH_LONG).show();
         }
@@ -341,9 +344,10 @@ public final class YawmiMainActivity extends Activity {
             .setItems(actions, (dialog, which) -> {
                 if (which == 0) askToEnableNotifications();
                 if (which == 1) {
-                    if (!YawmiReminderScheduler.enabled(this)) askToEnableNotifications();
-                    else if (YawmiReminderScheduler.permitted(this)) YawmiReminderReceiver.send(this,42002);
-                    else askToEnableNotifications();
+                    if (!YawmiReminderScheduler.enabled(this) || !YawmiReminderScheduler.permitted(this)) {
+                        testNotificationAfterPermission=true;
+                        askToEnableNotifications();
+                    }else YawmiReminderReceiver.send(this,42002);
                 }
                 if (which == 2) {
                     YawmiReminderScheduler.disable(this);
@@ -364,9 +368,12 @@ public final class YawmiMainActivity extends Activity {
                 sendNotificationState();
                 break;
             case "test":
-                if (YawmiReminderScheduler.enabled(this) &&
-                    YawmiReminderScheduler.permitted(this)) YawmiReminderReceiver.send(this,42002);
-                else askToEnableNotifications();
+                if(YawmiReminderScheduler.enabled(this) && YawmiReminderScheduler.permitted(this))
+                    YawmiReminderReceiver.send(this,42002);
+                else{
+                    testNotificationAfterPermission=true;
+                    askToEnableNotifications();
+                }
                 break;
             case "sync":
                 if (YawmiReminderScheduler.enabled(this)) {
@@ -503,9 +510,11 @@ public final class YawmiMainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int requestCode, String[] p, int[] results) {
         super.onRequestPermissionsResult(requestCode, p, results);
         if (requestCode == ASK_NOTIFICATIONS) {
-            if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED)
+            if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED){
                 YawmiReminderScheduler.enable(this);
-            else Toast.makeText(this, "اسمح بإشعارات يومي من إعدادات الهاتف لتفعيل التنبيهات.", Toast.LENGTH_LONG).show();
+                if(testNotificationAfterPermission)YawmiReminderReceiver.send(this,42002);
+            }else Toast.makeText(this, "اسمح بإشعارات يومي من إعدادات الهاتف لتفعيل التنبيهات.", Toast.LENGTH_LONG).show();
+            testNotificationAfterPermission=false;
             sendNotificationState();
         }
         if (requestCode == ASK_AUDIO && audioRequest != null) {
