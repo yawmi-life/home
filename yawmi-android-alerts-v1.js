@@ -2,8 +2,8 @@
    The Android app receives ONLY generic event ids and future timestamps.
    Device alerts work offline after scheduling, but are inexact and not FCM push. */
 (()=>{'use strict';
-const installed=/YawmiAndroid\\/\d+/.test(navigator.userAgent||'');
-let allowed=false,enabled=false,owner='',lastPayload='',lastSync=0;
+const installed=/YawmiAndroid\/\d+/.test(navigator.userAgent||'');
+let enabled=false,owner='',lastPayload='',lastSync=0;
 const cloud=()=>window.YawmiCloud,api=()=>window.YawmiExtraAPI;
 const authorized=()=>!!(cloud()?.ready&&cloud()?.currentUser?.id&&!cloud()?.conflict&&api()?.getState);
 function command(name,payload){
@@ -13,13 +13,8 @@ function command(name,payload){
  location.href=uri;
  return true;
 }
-function togglePrefs(value){
- const a=api(),s=a?.getState?.();
- if(s){s.lifeNotificationPrefs=s.lifeNotificationPrefs||{};s.lifeNotificationPrefs.enabled=value;a.save?.()}
-}
 function nativeState(isEnabled,hasPermission){
  enabled=!!isEnabled&&!!hasPermission;
- allowed=!!hasPermission;
  window.YawmiPush?.renderControls?.();
  if(enabled)sync(true);
 }
@@ -31,7 +26,7 @@ function enable(){
 function disable(){
  if(!installed)return false;
  command('disable');
- enabled=false;lastPayload='';togglePrefs(false);
+ enabled=false;lastPayload='';
  window.YawmiPush?.renderControls?.();
  return true;
 }
