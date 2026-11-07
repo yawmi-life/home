@@ -73,11 +73,13 @@ function events(){
 function sync(force=false){
  if(!installed||!enabled)return false;
  const u=cloud()?.currentUser?.id||'';
- if(u!==owner){owner=u;lastPayload=''}
  if(!authorized()){
-  if(lastPayload!=='[]'){lastPayload='[]';command('sync','[]')}
+  // Never delete previously scheduled alarms merely because an offline
+  // login/session cannot be read. Only clear on a confirmed, ready logout.
+  if(owner&&cloud()?.ready&&!u){owner='';lastPayload='[]';command('sync','[]')}
   return false;
  }
+ if(u!==owner){owner=u;lastPayload=''}
  const payload=JSON.stringify(events());
  if(payload===lastPayload&&!force)return true;
  if(!force&&Date.now()-lastSync<10000)return false;
