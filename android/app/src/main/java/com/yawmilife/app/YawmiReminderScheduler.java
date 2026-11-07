@@ -88,6 +88,32 @@ public final class YawmiReminderScheduler {
             // Malformed data must not delete previously scheduled reminders.
         }
     }
+    public static int count(Context c) {
+        if(!enabled(c))return 0;
+        try{
+            JSONArray a=new JSONArray(prefs(c).getString(DATA,"[]"));
+            int n=0;long now=System.currentTimeMillis();
+            for(int i=0;i<a.length();i++){
+                JSONObject item=a.optJSONObject(i);
+                if(item!=null&&item.optLong("at",0)>now)n++;
+            }
+            return n;
+        }catch(Exception ignored){return 0;}
+    }
+    public static long nextAt(Context c){
+        if(!enabled(c))return 0L;
+        long earliest=Long.MAX_VALUE,now=System.currentTimeMillis();
+        try{
+            JSONArray items=new JSONArray(prefs(c).getString(DATA,"[]"));
+            for(int i=0;i<items.length();i++){
+                JSONObject item=items.optJSONObject(i);
+                if(item==null)continue;
+                long t=item.optLong("at",0);
+                if(t>now&&t<earliest)earliest=t;
+            }
+        }catch(Exception ignored){}
+        return earliest==Long.MAX_VALUE?0L:earliest;
+    }
     public static void reschedule(Context c) {
         if (!enabled(c)) return;
         AlarmManager alarms = (AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
