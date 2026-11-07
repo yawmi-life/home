@@ -52,6 +52,7 @@ public final class YawmiMainActivity extends Activity {
     private static final String ROOT = "https://yawmi-life.github.io/home/";
     private static final int SELECT_FILE = 1126;
     private static final int ASK_AUDIO = 1127;
+    private static final int ASK_NOTIFICATIONS = 1128;
     private static final int VIOLET = Color.rgb(34, 28, 59);
     private LinearLayout shell;
     private FrameLayout content;
@@ -71,6 +72,8 @@ public final class YawmiMainActivity extends Activity {
         createShell();
         updates = new YawmiUpdateManager(this);
         YawmiUpdateWorker.schedule(this);
+        YawmiReminderReceiver.createChannel(this);
+        YawmiReminderScheduler.reschedule(this);
         try {
             configureWebView();
             navigateFromIntent(getIntent());
@@ -135,6 +138,10 @@ public final class YawmiMainActivity extends Activity {
         actions.addView(retry, new LinearLayout.LayoutParams(dp(46), dp(41)));
         retry.setOnClickListener(v -> reload());
 
+        Button alerts = button("🔔");
+        alerts.setContentDescription("إدارة إشعارات الهاتف الأصلية");
+        actions.addView(alerts, new LinearLayout.LayoutParams(dp(54), dp(41)));
+        alerts.setOnClickListener(v -> notificationOptions());
         header.addView(actions);
         shell.addView(header);
         progress = new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
@@ -158,6 +165,7 @@ public final class YawmiMainActivity extends Activity {
         web.setBackgroundColor(Color.rgb(247, 246, 255));
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
+        settings.setUserAgentString(settings.getUserAgentString() + " YawmiAndroid/1.6");
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(false);
@@ -186,10 +194,16 @@ public final class YawmiMainActivity extends Activity {
                     ? null : localAsset(req.getUrl(), req.getMethod());
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return route(request.getUrl());
+                Uri target = request.getUrl();
+                if (target != null && "yawminotify".equalsIgnoreCase(target.getScheme())) {
+                    if (request.isForMainFrame() && trustedCurrentPage()) handleNotificationCommand(target);
+                    return true;
+                }
+                return route(target);
             }
             @Override public void onPageFinished(WebView view, String url) {
                 if (progress != null) progress.setVisibility(View.GONE);
+                sendNotificationState();
                 if (status != null && status.getVisibility() == View.VISIBLE) status.setVisibility(View.GONE);
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
@@ -260,6 +274,84 @@ public final class YawmiMainActivity extends Activity {
                 Toast.makeText(this, "لتنزيل النسخ الاحتياطية افتح يومي من زر «المتصفح».", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+
+    /** Only first-party top-level pages can send scheduling commands. */
+    private boolean trustedCurrentPage() {
+        if (web == null) return false;
+        try {
+            Uri current = Uri.parse(web.getUrl());
+            return "https".equalsIgnoreCase(current.getScheme()) &&
+                HOST.equalsIgnoreCase(current.getHost()) &&
+                current.getPath() != null && current.getPath().startsWith("/home/");
+        } catch(Exception ignored) {return false;}
+    }
+
+    private void sendNotificationState() {
+        if (web == null) return;
+        String javascript = "window.YawmiAndroidAlerts&&window.YawmiAndroidAlerts.nativeState("
+            + YawmiReminderScheduler.enabled(this) + ","
+            + YawmiReminderScheduler.permitted(this) + ")";
+        web.evaluateJavascript(javascript, null);
+    }
+    private void askToEnableNotifications() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 && !YawmiReminderScheduler.permitted(this)) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, ASK_NOTIFICATIONS);
+        } else {
+            YawmiReminderScheduler.enable(this);
+            sendNotificationState();
+            Toast.makeText(this, "تم تفعيل تذكيرات أندرويد. ستُزامن المواعيد القادمة عند فتح يومي.", Toast.LENGTH_LONG).show();
+        }
+    }
+    private void notificationOptions() {
+        final String[] actions = {
+            "تفعيل إشعارات المواعيد والمهام", "إرسال إشعار تجريبي", "إيقاف إشعارات هذا الهاتف"
+        };
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("إشعارات يومي على أندرويد")
+            .setItems(actions, (dialog, which) -> {
+                if (which == 0) askToEnableNotifications();
+                if (which == 1) {
+                    if (!YawmiReminderScheduler.enabled(this)) askToEnableNotifications();
+                    else if (YawmiReminderScheduler.permitted(this)) YawmiReminderReceiver.send(this,42002);
+                    else askToEnableNotifications();
+                }
+                if (which == 2) {
+                    YawmiReminderScheduler.disable(this);
+                    sendNotificationState();
+                    Toast.makeText(this, "تم إيقاف تذكيرات هذا الهاتف.", Toast.LENGTH_SHORT).show();
+                }
+            }).setNegativeButton("إغلاق", null).show();
+    }
+    private void handleNotificationCommand(Uri uri) {
+        String op = uri.getHost();
+        if (op == null) return;
+        switch(op) {
+            case "enable":
+                askToEnableNotifications();
+                break;
+            case "disable":
+                YawmiReminderScheduler.disable(this);
+                sendNotificationState();
+                break;
+            case "test":
+                if (YawmiReminderScheduler.enabled(this) &&
+                    YawmiReminderScheduler.permitted(this)) YawmiReminderReceiver.send(this,42002);
+                else askToEnableNotifications();
+                break;
+            case "sync":
+                if (YawmiReminderScheduler.enabled(this)) {
+                    String items=uri.getQueryParameter("items");
+                    YawmiReminderScheduler.sync(this,items);
+                }
+                break;
+            case "status":
+                sendNotificationState();
+                break;
+            default:
+                break;
+        }
     }
 
     private boolean validatedInternet() {
@@ -381,6 +473,12 @@ public final class YawmiMainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] p, int[] results) {
         super.onRequestPermissionsResult(requestCode, p, results);
+        if (requestCode == ASK_NOTIFICATIONS) {
+            if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED)
+                YawmiReminderScheduler.enable(this);
+            else Toast.makeText(this, "اسمح بإشعارات يومي من إعدادات الهاتف لتفعيل التنبيهات.", Toast.LENGTH_LONG).show();
+            sendNotificationState();
+        }
         if (requestCode == ASK_AUDIO && audioRequest != null) {
             PermissionRequest pending = audioRequest;
             audioRequest = null;
@@ -463,6 +561,7 @@ public final class YawmiMainActivity extends Activity {
         super.onResume();
         if (web != null) web.onResume();
         if (updates != null) updates.onResume();
+        sendNotificationState();
     }
     @Override protected void onDestroy() {
         if (updates != null) {
