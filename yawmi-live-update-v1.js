@@ -3,7 +3,7 @@
    native APK updates remain the OS package manager's responsibility. */
 (() => {
   'use strict';
-  const THIS_REVISION = 'web-2026-11-06-38';
+  const THIS_REVISION = 'web-2026-11-07-39';
   const UPDATE_CHECK_INTERVAL = 15 * 60 * 1000;
   const RESUME_MIN_HIDDEN = 20000;
   const seenKey = 'yawmi-web-update-reload-' + THIS_REVISION;
