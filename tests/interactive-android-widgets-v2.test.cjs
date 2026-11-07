@@ -73,3 +73,16 @@ test('a stale widget never unchecks a task already completed elsewhere',()=>{
  const result=runWidgetAction(true);
  assert.equal(result.task,0);
 });
+
+test('external URLs cannot forge widget completion actions without Android private nonce',()=>{
+ const main=read('android/app/src/main/java/com/yawmilife/app/YawmiMainActivity.java');
+ const data=read('android/app/src/main/java/com/yawmilife/app/YawmiWidgetData.java');
+ const cat=read('android/app/src/main/java/com/yawmilife/app/YawmiCategoryWidget.java');
+ const shortcut=read('android/app/src/main/java/com/yawmilife/app/YawmiShortcutWidget.java');
+ assert.match(data,/java\.security\.SecureRandom/);
+ assert.match(main,/launcherNonce\(this\)/);
+ assert.match(main,/widgetAction/);
+ assert.match(main,/clearQuery\(\)/);
+ assert.match(cat,/putExtra\("yawmi_widget_nonce"/);
+ assert.match(shortcut,/putExtra\("yawmi_widget_nonce"/);
+});
