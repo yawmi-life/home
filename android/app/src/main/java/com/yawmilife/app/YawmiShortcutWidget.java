@@ -26,6 +26,7 @@ public final class YawmiShortcutWidget extends AppWidgetProvider {
             .appendQueryParameter("source","widget").appendQueryParameter("quick",parts[0]);
         if(parts.length>1)url.appendQueryParameter("widgetAction",parts[1]);
         intent.setData(url.build());
+        intent.putExtra("yawmi_widget_nonce",YawmiWidgetData.launcherNonce(context));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return PendingIntent.getActivity(
             context, code, intent,
