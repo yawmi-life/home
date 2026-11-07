@@ -6,6 +6,9 @@ on:
     paths:
       - 'android/**'
       - '.github/workflows/yawmi-android-smoke.yml'
+  pull_request:
+    branches: [main]
+    paths: ['android/**','*.js','*.html','*.css']
   workflow_dispatch:
 
 permissions:
