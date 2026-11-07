@@ -1,6 +1,6 @@
 {
-  "revision": "web-2026-11-07-39",
+  "revision": "web-2026-11-07-40",
   "date": "2026-11-07",
   "channel": "web",
-  "notes": "Native Android reminders integration and PWA offline assets; APK needs signed install"
+  "notes": "Interactive home widgets, accurate native reminders, pinned mobile header and safe-area fixes"
 }
