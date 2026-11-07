@@ -19,7 +19,7 @@ test('YAWMI published PWA version is consistent with the public checker', () => 
 
 test('All publicly served entry screens load the live update script', () => {
   for (const p of ['index.html','download.html','auth.html','01_ATLAS_Executive.html','02_JOURNAL_Editorial.html','03_QUEST_RPG.html']) {
-    assert.match(read(p), /yawmi-live-update-v1\.js\?v=39/, p);
+    assert.match(read(p), /yawmi-live-update-v1\.js\?v=40/, p);
   }
 });
 
