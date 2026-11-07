@@ -1,6 +1,7 @@
 /* YAWMI V35 background Web Push client — opt-in per device, account verified, server-scheduled. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id),api=()=>window.YawmiExtraAPI,cloud=()=>window.YawmiCloud;
+const native=()=>window.YawmiAndroidAlerts?.available?.()===true;
 const endpoint=()=>String(window.YAWMI_CONFIG?.supabaseUrl||'').replace(/\/$/,'')+'/functions/v1/yawmi-push-v35';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let activeDevice=false,ready=false,busy=false,info='',owner=null,lastStatus=0;
@@ -30,6 +31,12 @@ async function registration(){
 }
 async function enable(){
  if(busy)return;
+ if(native()){
+  if(!validSession()){info='سجّل الدخول قبل تفعيل التنبيهات.';renderControls();return}
+  window.YawmiAndroidAlerts.enable();
+  info='تظهر نافذة أندرويد للسماح بالإشعارات. بعد الموافقة ستعمل تذكيرات المواعيد والمهام المجدولة على هذا الهاتف.';
+  renderControls();return;
+ }
  if(!browserReady()){info='Web Push مش مدعوم في المتصفح ده. على iPhone ثبّت التطبيق على الشاشة الرئيسية أولًا.';renderControls();return}
  if(!validSession()){info='سجّل الدخول قبل ربط إشعارات الهاتف بحسابك.';renderControls();return}
  busy=true;renderControls();
@@ -53,7 +60,11 @@ async function enable(){
  }finally{busy=false;renderControls()}
 }
 async function disable(){
- if(busy)return;busy=true;renderControls();
+ if(busy)return;
+ if(native()){
+  window.YawmiAndroidAlerts.disable();activeDevice=false;ready=true;
+  info='تم إيقاف إشعارات أندرويد على هذا الهاتف فقط.';renderControls();return;
+ }busy=true;renderControls();
  try{
   const reg=await registration(),sub=await reg.pushManager.getSubscription();
   if(sub){await call('unsubscribe',{subscription:{endpoint:sub.endpoint}});await sub.unsubscribe()}
@@ -65,6 +76,10 @@ async function disable(){
  finally{busy=false;renderControls()}
 }
 async function test(){
+ if(native()){
+  window.YawmiAndroidAlerts.test();
+  info='تم طلب إشعار تجريبي من نظام أندرويد.';renderControls();return;
+ }
  if(busy||!activeDevice)return;
  busy=true;renderControls();
  try{const r=await call('test');info=r.queued?'تم إرسال إشعار تجريبي لخدمة جهازك. ظهور الإشعار يعتمد على إذن الهاتف.':'تعذر إرسال الإشعار التجريبي.'}
@@ -73,6 +88,7 @@ async function test(){
 }
 async function refresh(){
  ownerCheck();
+ if(native()){ready=true;activeDevice=!!window.YawmiAndroidAlerts.enabled();renderControls();return}
  if(!browserReady()||!validSession()||Date.now()-lastStatus<15000)return;
  lastStatus=Date.now();
  try{
@@ -84,16 +100,17 @@ async function refresh(){
 }
 function renderControls(){
  const box=$('ymPushControls');if(!box)return;ownerCheck();
- const support=browserReady(),permission='Notification' in window?Notification.permission:'unsupported';
+ if(native()){ready=true;activeDevice=!!window.YawmiAndroidAlerts.enabled()}
+ const support=native()||browserReady(),permission='Notification' in window?Notification.permission:'unsupported';
  box.innerHTML='<div class="yl-toolbar"><h3>🔔 إشعارات الهاتف في الخلفية</h3><small>'+(!support?'غير مدعوم':activeDevice?'الجهاز متصل':'غير مفعّل')+'</small></div>'+
- '<p class="muted">فعّل الإشعارات على جهازك علشان السيرفر يبعت التذكيرات المستحقة حتى لو صفحة يومي مقفولة. لازم إنترنت وإذن النظام.</p>'+
+ '<p class="muted">'+(native()?'إشعارات أصلية من أندرويد للمهام والمواعيد المجدولة. تشتغل بعد إغلاق التطبيق، وقد يؤخر أندرويد توقيتها. المواعيد الجديدة تتزامن عندما تفتح يومي.':'فعّل الإشعارات على جهازك علشان السيرفر يبعت التذكيرات المستحقة حتى لو صفحة يومي مقفولة. لازم إنترنت وإذن النظام.')+'</p>'+
  (!support?'<p class="yl-callout">على iPhone أو iPad ثبّت تطبيق يومي من Safari على الشاشة الرئيسية أولًا؛ وعلى المتصفحات الأخرى تأكد من دعم Web Push.</p>':
  '<div class="yl-calendar-connect">'+
  (activeDevice?'<button class="yl-action primary" data-push-test '+(busy?'disabled':'')+'>🧪 إشعار تجريبي</button><button class="yl-action" data-push-disable '+(busy?'disabled':'')+'>إيقاف إشعارات الجهاز</button>':
  '<button class="yl-action primary" data-push-enable '+(busy?'disabled':'')+'>🔔 تفعيل إشعارات الجهاز</button>')+
  '</div>')+
- '<p class="yl-google-status" role="status">'+esc(info||('إذن المتصفح: '+(permission==='granted'?'مسموح':permission==='denied'?'مرفوض':'غير محدد')))+'</p>'+
- '<small class="muted">الإرسال كل دقيقة تقريبًا عبر Supabase. لا يوجد ضمان لو الجهاز مقفول أو في وضع توفير بطارية شديد أو أذونات إشعاراته متوقفة.</small>';
+ '<p class="yl-google-status" role="status">'+esc(info||(native()?'إشعارات أندرويد':('إذن المتصفح: '+(permission==='granted'?'مسموح':permission==='denied'?'مرفوض':'غير محدد'))))+'</p>'+
+ '<small class="muted">'+(native()?'التنبيهات المحلية لا تستقبل تغييرات الأجهزة الأخرى أثناء إغلاق يومي؛ ذلك يتطلب Push أصلي مستقل.':'الإرسال كل دقيقة تقريبًا عبر Supabase. لا يوجد ضمان لو الجهاز مقفول أو في وضع توفير بطارية شديد أو أذونات إشعاراته متوقفة.')+'</small>';
  if(!ready&&!busy)refresh();
 }
 function init(){
