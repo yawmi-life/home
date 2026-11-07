@@ -21,7 +21,11 @@ public final class YawmiShortcutWidget extends AppWidgetProvider {
     private static PendingIntent open(Context context, String target, int code) {
         Intent intent = new Intent(context, YawmiMainActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse(ROOT + "index.html?source=widget&quick=" + target));
+        String[] parts=target.split("\\|",2);
+        Uri.Builder url=Uri.parse(ROOT+"index.html").buildUpon()
+            .appendQueryParameter("source","widget").appendQueryParameter("quick",parts[0]);
+        if(parts.length>1)url.appendQueryParameter("widgetAction",parts[1]);
+        intent.setData(url.build());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return PendingIntent.getActivity(
             context, code, intent,
@@ -33,9 +37,15 @@ public final class YawmiShortcutWidget extends AppWidgetProvider {
     public void onUpdate(Context context, AppWidgetManager manager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.yawmi_shortcut_widget);
-            views.setOnClickPendingIntent(R.id.yawmi_widget_tasks, open(context, "tasks", appWidgetId * 10 + 1));
-            views.setOnClickPendingIntent(R.id.yawmi_widget_habits, open(context, "habits", appWidgetId * 10 + 2));
+            views.setOnClickPendingIntent(R.id.yawmi_widget_tasks, open(context, "tasks|add-task", appWidgetId * 10 + 1));
+            views.setOnClickPendingIntent(R.id.yawmi_widget_habits, open(context, "habits|add-habit", appWidgetId * 10 + 2));
             views.setOnClickPendingIntent(R.id.yawmi_widget_calendar, open(context, "calendar", appWidgetId * 10 + 3));
+            views.setOnClickPendingIntent(R.id.yawmi_widget_expense,
+                open(context, "money|add-expense",appWidgetId * 10 + 4));
+            views.setOnClickPendingIntent(R.id.yawmi_widget_income,
+                open(context, "money|add-income",appWidgetId * 10 + 5));
+            views.setOnClickPendingIntent(R.id.yawmi_widget_report,
+                open(context, "reports",appWidgetId * 10 + 6));
             manager.updateAppWidget(appWidgetId, views);
         }
     }
