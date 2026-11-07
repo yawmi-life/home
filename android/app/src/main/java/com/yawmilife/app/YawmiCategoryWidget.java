@@ -57,6 +57,7 @@ public abstract class YawmiCategoryWidget extends AppWidgetProvider {
         Intent i=new Intent(c,YawmiMainActivity.class);
         i.setAction(Intent.ACTION_VIEW);
         i.setData(uri.build());
+        i.putExtra("yawmi_widget_nonce",YawmiWidgetData.launcherNonce(c));
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
         return PendingIntent.getActivity(c,code,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     }
