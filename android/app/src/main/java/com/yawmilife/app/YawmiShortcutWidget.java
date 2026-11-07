@@ -12,8 +12,8 @@ import android.widget.RemoteViews;
 /**
  * A privacy-preserving launcher widget. No account state, finance values or
  * private reminders are copied out of the web app to the Android launcher.
- * Tapping a button opens an authenticated YAWMI page; completion still
- * requires the user to mark real progress inside the application.
+ * Tapping an action opens the real authenticated YAWMI editor, without
+ * creating fake records in a public intent or accessing account credentials.
  */
 public final class YawmiShortcutWidget extends AppWidgetProvider {
     private static final String ROOT = "https://yawmi-life.github.io/home/";
