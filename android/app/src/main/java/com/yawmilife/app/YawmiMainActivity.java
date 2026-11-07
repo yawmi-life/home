@@ -18,6 +18,7 @@ import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
 import android.webkit.PermissionRequest;
@@ -71,6 +72,16 @@ public final class YawmiMainActivity extends Activity {
         getWindow().setStatusBarColor(VIOLET);
         getWindow().setNavigationBarColor(VIOLET);
         createShell();
+        // On Android 15+ the app is edge-to-edge. Reserve the real system bars
+        // once in the native shell so web controls never overlap gesture areas.
+        if(Build.VERSION.SDK_INT >= 35){
+            shell.setOnApplyWindowInsetsListener((view,insets)->{
+                android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars());
+                shell.setPadding(0,bars.top,0,bars.bottom);
+                return insets;
+            });
+            shell.requestApplyInsets();
+        }
         updates = new YawmiUpdateManager(this);
         YawmiUpdateWorker.schedule(this);
         YawmiReminderReceiver.createChannel(this);
@@ -204,6 +215,15 @@ public final class YawmiMainActivity extends Activity {
                     if (request.isForMainFrame() && trustedCurrentPage()) handleNotificationCommand(target);
                     return true;
                 }
+                if(target != null && "yawmiwidgetdata".equalsIgnoreCase(target.getScheme())){
+                    if(request.isForMainFrame() && trustedCurrentPage()){
+                        if("sync".equals(target.getHost()))
+                            YawmiWidgetData.acceptLocal(YawmiMainActivity.this,target.getQueryParameter("items"));
+                        else if("clear".equals(target.getHost()))
+                            YawmiWidgetData.unlink(YawmiMainActivity.this);
+                    }
+                    return true;
+                }
                 return route(target);
             }
             @Override public void onPageFinished(WebView view, String url) {
@@ -298,7 +318,9 @@ public final class YawmiMainActivity extends Activity {
         if (web == null) return;
         String javascript = "window.YawmiAndroidAlerts&&window.YawmiAndroidAlerts.nativeState("
             + YawmiReminderScheduler.enabled(this) + ","
-            + YawmiReminderScheduler.permitted(this) + ")";
+            + YawmiReminderScheduler.permitted(this) + ","
+            + YawmiReminderScheduler.count(this) + ","
+            + YawmiReminderScheduler.nextAt(this) + ")";
         web.evaluateJavascript(javascript, null);
     }
     private void askToEnableNotifications() {
@@ -350,6 +372,7 @@ public final class YawmiMainActivity extends Activity {
                 if (YawmiReminderScheduler.enabled(this)) {
                     String items=uri.getQueryParameter("items");
                     YawmiReminderScheduler.sync(this,items);
+                    sendNotificationState();
                 }
                 break;
             case "status":
