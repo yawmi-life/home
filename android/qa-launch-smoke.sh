@@ -29,7 +29,11 @@ for provider in \
   'YawmiCategoryWidget$Planning' \
   'YawmiCategoryWidget$Learning' \
   'YawmiCategoryWidget$Wellbeing' \
-  'YawmiCategoryWidget$Life'; do
+  'YawmiCategoryWidget$Life' \
+  'YawmiCategoryWidget$Tasks' \
+  'YawmiCategoryWidget$Habits' \
+  'YawmiCategoryWidget$Finance' \
+  'YawmiCategoryWidget$Reports'; do
   if ! grep -F "$provider" /tmp/yawmi-emulator-artifacts/package.txt >/dev/null; then
     echo "FAIL: missing Android launcher AppWidgetProvider: $provider" >&2
     exit 1
@@ -39,7 +43,7 @@ if grep -Eq 'ويدجتس شاشة الهاتف|▦ الويدجتس|ربط وي
   echo 'FAIL: obsolete widget controls remain INSIDE YAWMI app' >&2
   exit 1
 fi
-echo 'PASS: seven native Android home-screen widgets registered and zero in-app widget controls'
+echo 'PASS: eleven native Android home-screen widgets registered and zero in-app widget controls'
 adb logcat -d -b crash > /tmp/yawmi-emulator-artifacts/crash-log.txt
 if grep -F 'Process: com.yawmilife.app' /tmp/yawmi-emulator-artifacts/crash-log.txt; then
   echo "YAWMI native Android process crashed" >&2
