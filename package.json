@@ -4,7 +4,7 @@
   "private": true,
   "description": "Static PWA regression and accessibility tests; never bundles user data",
   "scripts": {
-    "test": "node --test tests/core.test.cjs",
+    "test": "node --test tests/core.test.cjs tests/native-reminders-static.test.cjs",
     "test:e2e": "playwright test",
     "test:all": "npm test && npm run test:e2e"
   },
