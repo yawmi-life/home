@@ -39,6 +39,8 @@ jobs:
           node --test tests/*.test.cjs
           node --check yawmi-live-update-v1.js
           node --check yawmi-native-widgets-v1.js
+          node --check yawmi-widget-actions-v2.js
+          node --check yawmi-android-alerts-v1.js
           node --check sw.js
 
       - name: Configure Java 17
