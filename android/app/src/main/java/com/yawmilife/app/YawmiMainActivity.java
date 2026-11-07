@@ -481,7 +481,22 @@ public final class YawmiMainActivity extends Activity {
         if (uri != null && "https".equalsIgnoreCase(uri.getScheme()) &&
             HOST.equalsIgnoreCase(uri.getHost()) &&
             uri.getPath() != null && uri.getPath().startsWith("/home/")) {
-            url = uri.toString();
+            // External links may open normal YAWMI sections, but may NOT
+            // impersonate the signed app's launcher widgets to perform writes.
+            Uri safe=uri;
+            if(uri.getQueryParameter("widgetAction")!=null){
+                String nonce=launch.getStringExtra("yawmi_widget_nonce");
+                if(nonce==null || !nonce.equals(YawmiWidgetData.launcherNonce(this))){
+                    Uri.Builder filtered=uri.buildUpon().clearQuery();
+                    for(String key:uri.getQueryParameterNames()){
+                        if("widgetAction".equals(key)||"widgetItem".equals(key))continue;
+                        for(String value:uri.getQueryParameters(key))
+                            filtered.appendQueryParameter(key,value);
+                    }
+                    safe=filtered.build();
+                }
+            }
+            url = safe.toString();
         }
         forceBundledFallback = !validatedInternet();
         web.loadUrl(url);
