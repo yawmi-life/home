@@ -25,7 +25,7 @@ test('All publicly served entry screens load the live update script', () => {
 
 test('Service worker precaches the update checker and safely activates new shell', () => {
   const sw = read('sw.js');
-  assert.match(sw, /yawmi-v42-android-native-reminders/);
+  assert.match(sw, /yawmi-v43-interactive-widgets-alerts-ui/);
   for (const name of ['site-version.json','yawmi-live-update-v1.js','yawmi-native-widgets-v1.js','yawmi-android-alerts-v1.js']) {
     assert.ok(sw.includes("'"+name+"'"),name);
   }
