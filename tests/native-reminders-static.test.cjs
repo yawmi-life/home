@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const read=p=>fs.readFileSync(p,'utf8');
 test('Android uses real home-screen widgets rather than an in-app fake widget list',()=>{
  const m=read('android/app/src/main/AndroidManifest.xml');
- assert.equal((m.match(/android\.appwidget\.provider/g)||[]).length,7);
+ assert.equal((m.match(/android\.appwidget\.provider/g)||[]).length,11);
  assert.match(m,/YawmiCategoryWidget\$Today/);
  assert.match(m,/YawmiCategoryWidget\$Life/);
 });
