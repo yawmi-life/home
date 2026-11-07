@@ -55,6 +55,7 @@ public final class YawmiMainActivity extends Activity {
     private static final int ASK_NOTIFICATIONS = 1128;
     private static final int VIOLET = Color.rgb(34, 28, 59);
     private LinearLayout shell;
+    private LinearLayout emergencyHeader;
     private FrameLayout content;
     private WebView web;
     private TextView status;
@@ -108,6 +109,10 @@ public final class YawmiMainActivity extends Activity {
         shell.setBackgroundColor(VIOLET);
         shell.setOrientation(LinearLayout.VERTICAL);
         LinearLayout header = new LinearLayout(this);
+        emergencyHeader = header;
+        // Full-height YAWMI canvas: the native recovery toolbar is hidden unless
+        // an actual Android/web rendering error occurs, never a browser URL bar.
+        header.setVisibility(View.GONE);
         header.setOrientation(LinearLayout.VERTICAL);
         header.setPadding(dp(10), dp(5), dp(10), dp(5));
         header.setBackgroundColor(VIOLET);
@@ -204,6 +209,7 @@ public final class YawmiMainActivity extends Activity {
             @Override public void onPageFinished(WebView view, String url) {
                 if (progress != null) progress.setVisibility(View.GONE);
                 sendNotificationState();
+                if (emergencyHeader != null) emergencyHeader.setVisibility(View.GONE);
                 if (status != null && status.getVisibility() == View.VISIBLE) status.setVisibility(View.GONE);
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
@@ -519,6 +525,7 @@ public final class YawmiMainActivity extends Activity {
     }
 
     private void showError(String text) {
+        if (emergencyHeader != null) emergencyHeader.setVisibility(View.VISIBLE);
         if (progress != null) progress.setVisibility(View.GONE);
         if (status != null) {
             status.setText(text);
